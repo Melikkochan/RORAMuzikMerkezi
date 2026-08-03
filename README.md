@@ -32,6 +32,8 @@ RORA Sanat Merkezi için geliştirilen bu uygulama; öğrenci kayıt, haftalık 
 
 A desktop application developed with C# and Windows Forms.
 
+bu bir testtir
+
 ## 📌 About
 
 This application was developed for RORA Art Center to digitally manage student registration, weekly lesson tracking, and monthly payment processes.
