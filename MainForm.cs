@@ -65,8 +65,10 @@ namespace RORAMuzikMerkezi
                 var gecen = DateTime.Now.AddMonths(-1);
                 PdfRaporHazirla(gecen.Year, gecen.Month);
             });
+            var menuBaskaAy = new ToolStripMenuItem("🗓️ Başka Ay…", null, (s, e) => BaskaAyRaporu());
             menuRapor.DropDownItems.AddRange(new ToolStripItem[] {
-                menuOzetRapor, menuOncekiAy, new ToolStripSeparator(), menuPdfBuAy, menuPdfOncekiAy });
+                menuOzetRapor, menuOncekiAy, new ToolStripSeparator(), menuPdfBuAy, menuPdfOncekiAy,
+                new ToolStripSeparator(), menuBaskaAy });
 
             var menuHakkinda = new ToolStripMenuItem("ℹ️ Hakkında") { ForeColor = Color.White, Font = new Font("Segoe UI", 10) };
             menuHakkinda.Click += (s, e) => MessageBox.Show(
@@ -468,6 +470,21 @@ namespace RORAMuzikMerkezi
             lblGenelAra.Location = new Point(SolSinir, 14);
             txtGenelAra.Location = new Point(SolSinir + 30, 13);
             txtGenelAra.Width = kutuGenisligi;
+        }
+
+        // "Bu Ay" ve "Önceki Ay" en sık istenenler, onlar menüde tek tıkla
+        // duruyor. Geçmiş bir ay gerektiğinde ay, yıl ve biçim burada seçiliyor.
+        private void BaskaAyRaporu()
+        {
+            using (var form = new RaporAySecimFormu())
+            {
+                if (form.ShowDialog(this) != DialogResult.OK) return;
+
+                if (form.PdfIstendi)
+                    PdfRaporHazirla(form.SecilenYil, form.SecilenAy);
+                else
+                    OzetRaporHazirla(form.SecilenYil, form.SecilenAy);
+            }
         }
 
         // Aynı raporu PDF olarak üretir. Metin raporu değişmeden çalışmaya
