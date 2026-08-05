@@ -15,6 +15,12 @@ namespace RORAMuzikMerkezi
         private ToolStripStatusLabel lblDurum;
         private Dictionary<string, CalgiSekmesi> calgiSekmeler = new Dictionary<string, CalgiSekmesi>();
         private TabPage tabGenel;
+        private Panel toolPanel;
+        private TextBox txtGenelAra;
+        private Label lblGenelAra;
+        private Label lblLogo;
+        private ListBox lstAramaSonuclari;
+        private readonly List<Ogrenci> aramaSonuclari = new List<Ogrenci>();
 
         public MainForm()
         {
@@ -74,7 +80,7 @@ namespace RORAMuzikMerkezi
             menuStrip.Items.AddRange(new ToolStripItem[] { menuOgrenci, menuRapor, menuVeri, menuUcret, menuHakkinda });
 
             // Ana buton çubuğu
-            var toolPanel = new Panel
+            toolPanel = new Panel
             {
                 Dock = DockStyle.Top,
                 Height = 52,
@@ -124,7 +130,7 @@ namespace RORAMuzikMerkezi
             btnYenile.FlatAppearance.BorderSize = 0;
             btnYenile.Click += (s, e) => TumSekmeletiYenile();
 
-            var lblLogo = new Label
+            lblLogo = new Label
             {
                 Text = "🎵 RORA SANAT MERKEZİ",
                 ForeColor = Color.White,
@@ -135,7 +141,43 @@ namespace RORAMuzikMerkezi
                 Padding = new Padding(0, 0, 10, 0)
             };
 
-            toolPanel.Controls.AddRange(new Control[] { btnYeniOgrenci, btnRapor, btnYenile, lblLogo });
+            lblGenelAra = new Label
+            {
+                Text = "🔍",
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 12),
+                Location = new Point(445, 14),
+                Size = new Size(28, 26),
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+
+            txtGenelAra = new TextBox
+            {
+                Location = new Point(475, 13),
+                Size = new Size(250, 26),
+                Font = new Font("Segoe UI", 10)
+            };
+            txtGenelAra.TextChanged += (s, e) => GenelAramaYap();
+            txtGenelAra.KeyDown += TxtGenelAra_KeyDown;
+            txtGenelAra.Leave += (s, e) => { if (!lstAramaSonuclari.Focused) lstAramaSonuclari.Visible = false; };
+
+            // Sonuç listesi forma eklenir; sekmelerin üstünde açılır bir liste gibi davranır
+            lstAramaSonuclari = new ListBox
+            {
+                Visible = false,
+                Font = new Font("Segoe UI", 10),
+                BorderStyle = BorderStyle.FixedSingle,
+                Width = 420,
+                Height = 160,
+                BackColor = Color.FromArgb(255, 255, 245)
+            };
+            lstAramaSonuclari.MouseClick += (s, e) => SecilenSonucaGit();
+            lstAramaSonuclari.KeyDown += LstAramaSonuclari_KeyDown;
+            lstAramaSonuclari.Leave += (s, e) => lstAramaSonuclari.Visible = false;
+
+            toolPanel.Controls.AddRange(new Control[] { btnYeniOgrenci, btnRapor, btnYenile, lblGenelAra, txtGenelAra, lblLogo });
+            toolPanel.Resize += (s, e) => AramaKutusunuKonumlandir();
+            AramaKutusunuKonumlandir();
 
             // TabControl
             tabControl = new TabControl
@@ -161,6 +203,7 @@ namespace RORAMuzikMerkezi
             statusStrip.Items.Add(lblDurum);
 
             this.MainMenuStrip = menuStrip;
+            this.Controls.Add(lstAramaSonuclari);
             this.Controls.Add(tabControl);
             this.Controls.Add(toolPanel);
             this.Controls.Add(menuStrip);
@@ -391,6 +434,125 @@ namespace RORAMuzikMerkezi
         private void GuncelleStatusBar()
         {
             lblDurum.Text = $"RORA Sanat Merkezi  |  {DateTime.Now:dd MMMM yyyy}  |  Toplam Öğrenci: {VeriYoneticisi.Veriler.Ogrenciler.Count}";
+        }
+
+        // Üst çubuktaki arama kutusunu pencere genişliğine göre yerleştirir.
+        //
+        // Pencere daraldığında sağa yapışık logo etiketi ile arama kutusu
+        // çakışıyordu (800 piksel genişlikte 231 piksellik örtüşme). Çakışma
+        // durumunda logo gizlenir: logo dekoratif, arama ise işlevsel.
+        private void AramaKutusunuKonumlandir()
+        {
+            if (txtGenelAra == null || lblGenelAra == null || lblLogo == null) return;
+
+            const int LogoAlani = 290;   // sağdaki logo etiketinin kapladığı yer
+            const int SolSinir = 445;    // düğmelerin bittiği nokta
+            const int EnDarKutu = 120;
+
+            int gerekenGenislik = SolSinir + 30 + EnDarKutu;
+            bool logoSigiyor = (toolPanel.ClientSize.Width - LogoAlani) >= gerekenGenislik;
+            lblLogo.Visible = logoSigiyor;
+
+            int sagSinir = logoSigiyor
+                ? toolPanel.ClientSize.Width - LogoAlani
+                : toolPanel.ClientSize.Width - 10;
+
+            int kutuGenisligi = Math.Max(EnDarKutu, Math.Min(250, sagSinir - SolSinir - 30));
+
+            lblGenelAra.Location = new Point(SolSinir, 14);
+            txtGenelAra.Location = new Point(SolSinir + 30, 13);
+            txtGenelAra.Width = kutuGenisligi;
+        }
+
+        // Tüm çalgılardaki öğrenciler arasında arar. Sekme içi aramayla aynı
+        // kuralları kullanır (Metin sınıfı): ad, soyad ve telefonda, Türkçe
+        // karakterlere ve büyük/küçük harfe duyarsız.
+        private void GenelAramaYap()
+        {
+            string arama = txtGenelAra.Text.Trim();
+            lstAramaSonuclari.Items.Clear();
+            aramaSonuclari.Clear();
+
+            // Tek harfte tüm listeyi açmanın faydası yok
+            if (arama.Length < 2)
+            {
+                lstAramaSonuclari.Visible = false;
+                return;
+            }
+
+            var bulunanlar = VeriYoneticisi.Veriler.Ogrenciler
+                .Where(o => Metin.OgrenciEslesiyorMu(o, arama))
+                .OrderBy(o => o.Calgı)
+                .ThenBy(o => o.TamAd)
+                .Take(15)
+                .ToList();
+
+            foreach (var o in bulunanlar)
+            {
+                aramaSonuclari.Add(o);
+                string telefon = string.IsNullOrWhiteSpace(o.Telefon) ? "" : $"  —  {o.Telefon}";
+                lstAramaSonuclari.Items.Add($"{o.TamAd}  —  🎵 {o.Calgı}{telefon}");
+            }
+
+            if (bulunanlar.Count == 0)
+                lstAramaSonuclari.Items.Add("(eşleşen öğrenci yok)");
+
+            lstAramaSonuclari.Location = new Point(txtGenelAra.Left, toolPanel.Bottom);
+            lstAramaSonuclari.Height = Math.Min(220, lstAramaSonuclari.Items.Count * 22 + 6);
+            lstAramaSonuclari.Visible = true;
+            lstAramaSonuclari.BringToFront();
+        }
+
+        private void TxtGenelAra_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Escape)
+            {
+                txtGenelAra.Text = string.Empty;
+                lstAramaSonuclari.Visible = false;
+            }
+            else if (e.KeyCode == Keys.Down && lstAramaSonuclari.Visible && aramaSonuclari.Count > 0)
+            {
+                lstAramaSonuclari.SelectedIndex = 0;
+                lstAramaSonuclari.Focus();
+            }
+            else if (e.KeyCode == Keys.Enter && aramaSonuclari.Count > 0)
+            {
+                lstAramaSonuclari.SelectedIndex = 0;
+                SecilenSonucaGit();
+            }
+        }
+
+        private void LstAramaSonuclari_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter) SecilenSonucaGit();
+            else if (e.KeyCode == Keys.Escape) { lstAramaSonuclari.Visible = false; txtGenelAra.Focus(); }
+        }
+
+        private void SecilenSonucaGit()
+        {
+            int sira = lstAramaSonuclari.SelectedIndex;
+            if (sira < 0 || sira >= aramaSonuclari.Count) return;
+
+            var ogrenci = aramaSonuclari[sira];
+            lstAramaSonuclari.Visible = false;
+            txtGenelAra.Text = string.Empty;
+            OgrenciyeGit(ogrenci);
+        }
+
+        // Öğrencinin çalgı sekmesini açar ve satırını seçili hâle getirir.
+        private void OgrenciyeGit(Ogrenci ogrenci)
+        {
+            CalgiSekmesi sekme;
+            if (!calgiSekmeler.TryGetValue(ogrenci.Calgı, out sekme)) return;
+
+            foreach (TabPage sayfa in tabControl.TabPages)
+            {
+                if (!sayfa.Controls.Contains(sekme)) continue;
+                tabControl.SelectedTab = sayfa;
+                break;
+            }
+
+            sekme.OgrenciSec(ogrenci.Id);
         }
 
         private void CalgiUcretleriniAc()
