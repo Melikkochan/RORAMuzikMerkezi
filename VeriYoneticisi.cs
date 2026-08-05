@@ -94,8 +94,21 @@ namespace RORAMuzikMerkezi
                 Environment.Exit(1);
         }
 
+        // Kayıt dosyasının doğrudan üstüne yazılmaz. StreamWriter dosyayı açar
+        // açmaz içeriğini sıfırlar; serileştirme bitene kadar geçen sürede
+        // dosya yarım durumdadır ve o aralıkta elektrik kesilirse, program
+        // çökerse veya bilgisayar kapanırsa tek kopya bozulur. Kaydet her ders
+        // işaretlemesinde ve her ödeme girişinde çağrıldığı için bu aralık gün
+        // içinde defalarca oluşuyor.
+        //
+        // Bunun yerine önce aynı klasördeki geçici bir dosyaya yazılır, yazma
+        // tamamlanıp içerik diske indirildikten sonra dosya tek adımda asıl
+        // dosyanın yerine geçirilir. Yazma yarıda kalırsa asıl dosya eski
+        // hâliyle sağlam kalır; en kötü ihtimalle son işlem kaydedilmemiş olur.
         public static void Kaydet()
         {
+            string geciciYol = VeriDosyasi + ".yeni";
+
             try
             {
                 string klasor = Path.GetDirectoryName(VeriDosyasi);
@@ -103,15 +116,48 @@ namespace RORAMuzikMerkezi
                     Directory.CreateDirectory(klasor);
 
                 var serializer = new XmlSerializer(typeof(Veriler));
-                using (var writer = new StreamWriter(VeriDosyasi))
+                using (var akis = new FileStream(geciciYol, FileMode.Create, FileAccess.Write, FileShare.None))
+                using (var writer = new StreamWriter(akis))
                 {
                     serializer.Serialize(writer, Veriler);
+                    writer.Flush();
+
+                    // İçerik işletim sisteminin önbelleğinde beklerken dosya
+                    // yerine konursa ani kapanmada geçici dosya da boş kalabilir.
+                    akis.Flush(true);
                 }
+
+                YerineKoy(geciciYol, VeriDosyasi);
             }
             catch (Exception ex)
             {
+                SessizceSil(geciciYol);
                 MessageBox.Show($"Kayıt hatası: {ex.Message}", "Hata");
             }
+        }
+
+        // Geçici dosyayı asıl dosyanın yerine geçirir. File.Replace değiştirmeyi
+        // tek adımda yapar: yarıda kalırsa hedef ya eski ya yeni içerikle kalır,
+        // ikisinin arası bir hâl oluşmaz. Bir önceki sürüm de ".onceki" adıyla
+        // saklanır; otomatik yedek günde bir alındığı için bu, gün içindeki son
+        // sağlam hâle dönebilmeyi sağlar.
+        //
+        // Geçici dosya asıl dosyayla aynı klasörde, dolayısıyla aynı sürücüde
+        // duruyor; farklı sürücüde olsaydı değiştirme atomik olmazdı.
+        private static void YerineKoy(string geciciYol, string hedefYol)
+        {
+            if (File.Exists(hedefYol))
+                File.Replace(geciciYol, hedefYol, hedefYol + ".onceki");
+            else
+                File.Move(geciciYol, hedefYol);
+        }
+
+        // Temizlik başarısız olursa sessiz geçilir: asıl iş zaten yapılamamış,
+        // kullanıcıya ikinci bir hata göstermenin faydası yok.
+        private static void SessizceSil(string yol)
+        {
+            try { if (File.Exists(yol)) File.Delete(yol); }
+            catch { }
         }
 
         public static Ogrenci OgrenciEkle(string ad, string soyad, string telefon, string calgi, decimal? aylikUcret = null)
