@@ -320,7 +320,7 @@ namespace RORAMuzikMerkezi
                 var kutu = new Panel
                 {
                     Location = new Point(xPos, 105),
-                    Size = new Size(190, 110),
+                    Size = new Size(190, 120),
                     BackColor = dolu ? renk : Renkler.Yuzey,
                     BorderStyle = BorderStyle.None
                 };
@@ -332,7 +332,7 @@ namespace RORAMuzikMerkezi
                     {
                         BackColor = renk,
                         Location = new Point(0, 0),
-                        Size = new Size(4, 110)
+                        Size = new Size(4, 120)
                     });
                     kutu.Paint += (s, e) => ControlPaint.DrawBorder(
                         e.Graphics, ((Control)s).ClientRectangle, Renkler.Cizgi, ButtonBorderStyle.Solid);
@@ -343,8 +343,8 @@ namespace RORAMuzikMerkezi
                     Text = ikon,
                     Font = new Font("Segoe UI", 18),
                     ForeColor = dolu ? Renkler.MetinTers : renk,
-                    Location = new Point(14, 10),
-                    Size = new Size(40, 32),
+                    Location = new Point(14, 8),
+                    Size = new Size(40, 36),
                     TextAlign = ContentAlignment.MiddleLeft
                 });
 
@@ -353,8 +353,11 @@ namespace RORAMuzikMerkezi
                     Text = deger,
                     Font = Yazilar.Sayi,
                     ForeColor = dolu ? Renkler.MetinTers : Renkler.Metin,
+                    // Yükseklikler yazının ölçülen boyuna göre veriliyor.
+                    // Daha dar verilirse sayının altı sessizce kesiliyor;
+                    // yerleşim testi bunu ölçerek denetliyor.
                     Location = new Point(12, 44),
-                    Size = new Size(166, 38),
+                    Size = new Size(166, 48),
                     TextAlign = ContentAlignment.MiddleLeft
                 });
 
@@ -363,7 +366,7 @@ namespace RORAMuzikMerkezi
                     Text = baslik,
                     Font = Yazilar.Kucuk,
                     ForeColor = dolu ? Color.FromArgb(205, 212, 235) : Renkler.MetinSolgun,
-                    Location = new Point(14, 84),
+                    Location = new Point(14, 94),
                     Size = new Size(170, 20),
                     TextAlign = ContentAlignment.MiddleLeft
                 });
