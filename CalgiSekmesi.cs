@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
-using System.Text;
 using System.Windows.Forms;
 
 namespace RORAMuzikMerkezi
@@ -322,46 +321,29 @@ namespace RORAMuzikMerkezi
         {
             if (string.IsNullOrWhiteSpace(arama)) return kaynak;
 
-            return kaynak.Where(o =>
-                Iceriyor(o.TamAd, arama) ||
-                Iceriyor(o.Telefon, arama)
-            ).ToList();
+            return kaynak.Where(o => Metin.OgrenciEslesiyorMu(o, arama)).ToList();
         }
 
-        private static bool Iceriyor(string metin, string aranan)
+        // Genel aramadan gelen yönlendirme için: verilen öğrenciyi listede
+        // seçili hâle getirir ve görünür alana kaydırır.
+        public void OgrenciSec(int ogrenciId)
         {
-            if (string.IsNullOrEmpty(metin)) return false;
-            return AramaIcinNormalize(metin).IndexOf(AramaIcinNormalize(aranan), StringComparison.Ordinal) >= 0;
-        }
+            // Sekme içi arama doluysa öğrenci süzülmüş olabilir; önce temizle
+            if (txtAra.Text.Length > 0)
+                txtAra.Text = string.Empty;   // TextChanged ListeyiYenile çağırır
+            else
+                ListeyiYenile();
 
-        // Aramayı Türkçe karakterlere karşı duyarsız hâle getirir.
-        //
-        // Gerekçe: Türkçede I/ı ile İ/i ayrı harf çiftleridir. Kültüre duyarlı
-        // karşılaştırmada \"CIVAN\" ile \"civan\", \"BİLAL\" ile \"BILAL\" eşleşmez.
-        // Bu teknik olarak doğrudur ama arama kutusunda kullanıcıyı engeller:
-        // klavyesine göre farklı i yazan kullanıcı öğrenciyi bulamaz.
-        // Bu yüzden i, ı, İ, I hepsi tek bir harfe indirgenir; şapkalı ve
-        // noktalı diğer harfler de aynı biçimde sadeleştirilir.
-        private static string AramaIcinNormalize(string metin)
-        {
-            if (string.IsNullOrEmpty(metin)) return string.Empty;
-
-            var sb = new StringBuilder(metin.Length);
-            foreach (char karakter in metin)
+            foreach (DataGridViewRow satir in dgvOgrenciler.Rows)
             {
-                char k = karakter;
-                switch (k)
-                {
-                    case 'İ': case 'I': case 'ı': k = 'i'; break;
-                    case 'Ş': case 'ş': k = 's'; break;
-                    case 'Ğ': case 'ğ': k = 'g'; break;
-                    case 'Ü': case 'ü': k = 'u'; break;
-                    case 'Ö': case 'ö': k = 'o'; break;
-                    case 'Ç': case 'ç': k = 'c'; break;
-                }
-                sb.Append(char.ToLowerInvariant(k));
+                if ((int)satir.Cells["colId"].Value != ogrenciId) continue;
+
+                satir.Selected = true;
+                dgvOgrenciler.CurrentCell = satir.Cells["colAd"];
+                dgvOgrenciler.FirstDisplayedScrollingRowIndex = satir.Index;
+                dgvOgrenciler.Focus();
+                break;
             }
-            return sb.ToString();
         }
 
         private void DgvOgrenciler_CellValueChanged(object sender, DataGridViewCellEventArgs e)
