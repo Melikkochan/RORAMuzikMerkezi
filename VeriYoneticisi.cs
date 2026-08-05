@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Xml.Serialization;
 using System.Linq;
+using System.Windows.Forms;
 
 namespace RORAMuzikMerkezi
 {
@@ -31,7 +32,59 @@ namespace RORAMuzikMerkezi
                     }
                 }
             }
-            catch { Veriler = new Veriler(); }
+            catch (Exception ex)
+            {
+                Veriler = new Veriler();
+                BozukDosyayiKurtar(ex);
+            }
+        }
+
+        // Kayıt dosyası okunamadığında çağrılır. Bozuk dosyayı silmek yerine
+        // tarihli bir adla kenara alır, kullanıcıyı bilgilendirir ve boş bir
+        // listeyle devam edip etmeyeceğini sorar. Böylece bozuk dosyanın
+        // üzerine yazılıp verinin kalıcı olarak kaybolması engellenir.
+        private static void BozukDosyayiKurtar(Exception hata)
+        {
+            string yedekYolu = null;
+            try
+            {
+                if (File.Exists(VeriDosyasi))
+                {
+                    yedekYolu = Path.Combine(
+                        Path.GetDirectoryName(VeriDosyasi),
+                        $"veriler.bozuk.{DateTime.Now:yyyyMMdd_HHmmss}.xml");
+                    File.Move(VeriDosyasi, yedekYolu);
+                }
+            }
+            catch { yedekYolu = null; }
+
+            var mesaj = new System.Text.StringBuilder();
+            mesaj.AppendLine("Kayıt dosyası okunamadı, mevcut veriler yüklenemedi.");
+            mesaj.AppendLine();
+            mesaj.AppendLine($"Dosya : {VeriDosyasi}");
+            mesaj.AppendLine($"Hata  : {hata.Message}");
+            mesaj.AppendLine();
+
+            if (yedekYolu != null)
+            {
+                mesaj.AppendLine("Bozuk dosya silinmedi, şu adla kenara alındı:");
+                mesaj.AppendLine(yedekYolu);
+            }
+            else
+            {
+                mesaj.AppendLine("DİKKAT: Bozuk dosya yedeklenemedi.");
+                mesaj.AppendLine("Devam ederseniz dosyanın üzerine yazılabilir.");
+            }
+
+            mesaj.AppendLine();
+            mesaj.AppendLine("Boş bir öğrenci listesiyle devam etmek istiyor musunuz?");
+            mesaj.AppendLine("Hayır'ı seçerseniz uygulama kapanır ve dosyayı elle kurtarabilirsiniz.");
+
+            var sonuc = MessageBox.Show(mesaj.ToString(), "Veri Yükleme Hatası",
+                MessageBoxButtons.YesNo, MessageBoxIcon.Error);
+
+            if (sonuc != DialogResult.Yes)
+                Environment.Exit(1);
         }
 
         public static void Kaydet()
@@ -50,7 +103,7 @@ namespace RORAMuzikMerkezi
             }
             catch (Exception ex)
             {
-                System.Windows.Forms.MessageBox.Show($"Kayıt hatası: {ex.Message}", "Hata");
+                MessageBox.Show($"Kayıt hatası: {ex.Message}", "Hata");
             }
         }
 
