@@ -19,7 +19,7 @@ namespace RORAMuzikMerkezi
 
             PictureBox logo = new PictureBox
             {
-                Image = Image.FromFile("rora1.png"),
+                Image = Varliklar.Resim("rora1.png"),
                 Location = new Point(180, 20),
                 Size = new Size(200, 80),
                 SizeMode = PictureBoxSizeMode.Zoom,

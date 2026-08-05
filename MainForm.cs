@@ -34,8 +34,9 @@ namespace RORAMuzikMerkezi
             this.MinimumSize = new Size(800, 550);
             this.BackColor = Color.FromArgb(245, 245, 250);
 
-            // İkon simgesi için form ikonu
-            this.Icon = new Icon("favicon.ico");
+            // İkon simgesi için form ikonu (bulunamazsa varsayılan ikonla açılır)
+            var ikon = Varliklar.Ikon("favicon.ico");
+            if (ikon != null) this.Icon = ikon;
 
             // Menu
             menuStrip = new MenuStrip { BackColor = Color.FromArgb(50, 65, 130), ForeColor = Color.White };
