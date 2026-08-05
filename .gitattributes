@@ -1,0 +1,33 @@
+# Satır sonlarını Git düzeyinde sabitler.
+#
+# Depoda her metin dosyası LF olarak saklanır; çalışma kopyasında dosya
+# türüne göre CRLF veya LF olarak açılır. Bu kural olmadan her editör
+# kendi satır sonunu yazıyor ve dosyalar karışık hâle geliyordu; sonuçta
+# tek satırlık düzeltmeler bile diff'te onlarca satır olarak görünüyordu.
+
+* text=auto
+
+# Visual Studio ve MSBuild dosyaları Windows araçlarıyla düzenleniyor,
+# çalışma kopyasında CRLF olmalı
+*.cs        text eol=crlf
+*.csproj    text eol=crlf
+*.sln       text eol=crlf
+*.config    text eol=crlf
+*.resx      text eol=crlf
+*.settings  text eol=crlf
+
+# Platformdan bağımsız metin dosyaları LF
+*.md            text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
+.gitignore      text eol=lf
+.gitattributes  text eol=lf
+.editorconfig   text eol=lf
+
+# İkili dosyalar — hiçbir dönüştürme uygulanmasın
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.ico   binary
+*.pfx   binary
+*.snk   binary

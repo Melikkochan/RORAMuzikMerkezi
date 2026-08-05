@@ -1,0 +1,23 @@
+# Editör düzeyinde girinti ve satır sonu ayarları.
+# .gitattributes Git tarafını, bu dosya editör tarafını sabitler; ikisi
+# birlikte satır sonlarının tekrar karışmasını önler.
+# Visual Studio, VS Code ve Rider bu dosyayı doğrudan destekler.
+
+root = true
+
+[*]
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+
+[*.cs]
+end_of_line = crlf
+indent_size = 4
+
+[*.{csproj,sln,config,resx,settings}]
+end_of_line = crlf
+indent_size = 2
+
+[*.{md,yml,yaml}]
+end_of_line = lf
+indent_size = 2
