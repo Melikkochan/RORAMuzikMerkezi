@@ -97,6 +97,9 @@
     </Compile>
     <Compile Include="VeriYoneticisi.cs" />
     <Compile Include="Varliklar.cs" />
+    <Compile Include="UcretTanimFormu.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="TutarGirisFormu.cs">
       <SubType>Form</SubType>
     </Compile>

@@ -114,7 +114,7 @@ namespace RORAMuzikMerkezi
             }
         }
 
-        public static Ogrenci OgrenciEkle(string ad, string soyad, string telefon, string calgi)
+        public static Ogrenci OgrenciEkle(string ad, string soyad, string telefon, string calgi, decimal? aylikUcret = null)
         {
             Veriler.SonOgrenciId++;
             var ogrenci = new Ogrenci
@@ -124,6 +124,7 @@ namespace RORAMuzikMerkezi
                 Soyad = soyad,
                 Telefon = telefon,
                 Calgı = calgi,
+                AylikUcret = aylikUcret,
                 KayitTarihi = DateTime.Now
             };
             Veriler.Ogrenciler.Add(ogrenci);
@@ -144,7 +145,7 @@ namespace RORAMuzikMerkezi
 
         // Kayıtlı bir öğrencinin bilgilerini günceller. Ders ve ödeme kayıtları
         // öğrenci nesnesinin içinde tutulduğu için bu işlemden etkilenmez.
-        public static bool OgrenciGuncelle(int ogrenciId, string ad, string soyad, string telefon, string calgi)
+        public static bool OgrenciGuncelle(int ogrenciId, string ad, string soyad, string telefon, string calgi, decimal? aylikUcret = null)
         {
             var ogrenci = Veriler.Ogrenciler.FirstOrDefault(o => o.Id == ogrenciId);
             if (ogrenci == null) return false;
@@ -153,6 +154,7 @@ namespace RORAMuzikMerkezi
             ogrenci.Soyad = soyad;
             ogrenci.Telefon = telefon;
             ogrenci.Calgı = calgi;
+            ogrenci.AylikUcret = aylikUcret;
             Kaydet();
             return true;
         }
@@ -393,6 +395,49 @@ namespace RORAMuzikMerkezi
                 foreach (var f in eskiler) f.Delete();
             }
             catch { }
+        }
+
+        // ---- Ücret tanımları ----
+
+        // Çalgının varsayılan aylık ücreti; tanımlı değilse null.
+        public static decimal? CalgiUcretiGetir(string calgi)
+        {
+            var kayit = Veriler.CalgiUcretleri.FirstOrDefault(c =>
+                string.Equals(c.Calgi, calgi, StringComparison.CurrentCultureIgnoreCase));
+            return kayit == null ? (decimal?)null : kayit.Ucret;
+        }
+
+        // null veya negatif verilirse tanım kaldırılır.
+        public static void CalgiUcretiAyarla(string calgi, decimal? ucret)
+        {
+            var kayit = Veriler.CalgiUcretleri.FirstOrDefault(c =>
+                string.Equals(c.Calgi, calgi, StringComparison.CurrentCultureIgnoreCase));
+
+            if (ucret == null || ucret < 0m)
+            {
+                if (kayit != null) Veriler.CalgiUcretleri.Remove(kayit);
+            }
+            else if (kayit == null)
+            {
+                Veriler.CalgiUcretleri.Add(new CalgiUcreti { Calgi = calgi, Ucret = ucret.Value });
+            }
+            else
+            {
+                kayit.Ucret = ucret.Value;
+            }
+            Kaydet();
+        }
+
+        // Ödeme alınırken kutuya gelecek varsayılan tutar.
+        // Öncelik: öğrenciye özel ücret > çalgının ücreti > 0 (tanımsız).
+        public static decimal VarsayilanUcret(int ogrenciId)
+        {
+            var ogrenci = Veriler.Ogrenciler.FirstOrDefault(o => o.Id == ogrenciId);
+            if (ogrenci == null) return 0m;
+            if (ogrenci.AylikUcret.HasValue) return ogrenci.AylikUcret.Value;
+
+            var calgiUcreti = CalgiUcretiGetir(ogrenci.Calgı);
+            return calgiUcreti ?? 0m;
         }
 
         // Tutarları rapor ve arayüzde aynı biçimde göstermek için tek nokta

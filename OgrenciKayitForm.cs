@@ -8,7 +8,7 @@ namespace RORAMuzikMerkezi
 {
     public class OgrenciKayitForm : Form
     {
-        private TextBox txtAd, txtSoyad, txtTelefon;
+        private TextBox txtAd, txtSoyad, txtTelefon, txtUcret;
         private ListBox lstCalgilar;
         private Button btnKaydet, btnIptal;
         private Label lblBaslik;
@@ -44,6 +44,9 @@ namespace RORAMuzikMerkezi
             txtAd.Text = duzenlenen.Ad;
             txtSoyad.Text = duzenlenen.Soyad;
             txtTelefon.Text = duzenlenen.Telefon;
+            txtUcret.Text = duzenlenen.AylikUcret.HasValue
+                ? duzenlenen.AylikUcret.Value.ToString("N2", new System.Globalization.CultureInfo("tr-TR"))
+                : string.Empty;
 
             int sira = lstCalgilar.Items.IndexOf(duzenlenen.Calgı);
             if (sira < 0 && !string.IsNullOrWhiteSpace(duzenlenen.Calgı))
@@ -57,7 +60,7 @@ namespace RORAMuzikMerkezi
         private void InitializeComponent()
         {
             this.Text = "Yeni Öğrenci Kaydı";
-            this.Size = new Size(420, 480);
+            this.Size = new Size(420, 545);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -86,18 +89,30 @@ namespace RORAMuzikMerkezi
             var lblTelefon = new Label { Text = "Telefon:", Location = new Point(15, 145), Size = new Size(80, 22), Font = new Font("Segoe UI", 10) };
             txtTelefon = new TextBox { Location = new Point(100, 142), Size = new Size(290, 28), Font = new Font("Segoe UI", 10) };
 
+            // Öğrenciye özel aylık ücret (isteğe bağlı)
+            var lblUcret = new Label { Text = "Aylık Ücret:", Location = new Point(15, 185), Size = new Size(80, 22), Font = new Font("Segoe UI", 10) };
+            txtUcret = new TextBox { Location = new Point(100, 182), Size = new Size(140, 28), Font = new Font("Segoe UI", 10) };
+            var lblUcretNot = new Label
+            {
+                Text = "boş = çalgı ücreti",
+                Location = new Point(248, 186),
+                Size = new Size(145, 22),
+                Font = new Font("Segoe UI", 8),
+                ForeColor = Color.FromArgb(120, 120, 140)
+            };
+
             // Çalgı seçimi
             var lblCalgi = new Label
             {
                 Text = "Çalgı Kursu Seçin:",
-                Location = new Point(15, 185),
+                Location = new Point(15, 222),
                 Size = new Size(380, 22),
                 Font = new Font("Segoe UI", 10, FontStyle.Bold)
             };
 
             lstCalgilar = new ListBox
             {
-                Location = new Point(15, 210),
+                Location = new Point(15, 247),
                 Size = new Size(375, 180),
                 Font = new Font("Segoe UI", 11),
                 BorderStyle = BorderStyle.FixedSingle,
@@ -110,7 +125,7 @@ namespace RORAMuzikMerkezi
             btnKaydet = new Button
             {
                 Text = "✅ Kaydet",
-                Location = new Point(15, 405),
+                Location = new Point(15, 442),
                 Size = new Size(180, 38),
                 Font = new Font("Segoe UI", 10, FontStyle.Bold),
                 BackColor = Color.FromArgb(50, 150, 80),
@@ -124,7 +139,7 @@ namespace RORAMuzikMerkezi
             btnIptal = new Button
             {
                 Text = "❌ İptal",
-                Location = new Point(210, 405),
+                Location = new Point(210, 442),
                 Size = new Size(180, 38),
                 Font = new Font("Segoe UI", 10),
                 BackColor = Color.FromArgb(200, 70, 70),
@@ -136,9 +151,26 @@ namespace RORAMuzikMerkezi
 
             this.Controls.AddRange(new Control[] {
                 lblBaslik, lblAd, txtAd, lblSoyad, txtSoyad,
-                lblTelefon, txtTelefon, lblCalgi, lstCalgilar,
+                lblTelefon, txtTelefon, lblUcret, txtUcret, lblUcretNot,
+                lblCalgi, lstCalgilar,
                 btnKaydet, btnIptal
             });
+        }
+
+        // Boş bırakılabilir; o zaman null döner ve çalgının varsayılan ücreti geçerli olur.
+        private static bool UcretAyristir(string metin, out decimal? ucret)
+        {
+            ucret = null;
+            if (string.IsNullOrWhiteSpace(metin)) return true;
+
+            metin = metin.Replace(".", ",");
+            decimal deger;
+            bool okundu = decimal.TryParse(metin, System.Globalization.NumberStyles.Number,
+                new System.Globalization.CultureInfo("tr-TR"), out deger);
+
+            if (!okundu || deger < 0m) return false;
+            ucret = deger;
+            return true;
         }
 
         // Telefon zorunlu değildir. Girilmişse biçimi kabaca doğrulanır:
@@ -182,6 +214,18 @@ namespace RORAMuzikMerkezi
                 return;
             }
 
+            decimal? aylikUcret;
+            if (!UcretAyristir(txtUcret.Text.Trim(), out aylikUcret))
+            {
+                MessageBox.Show(
+                    "Aylık ücret geçerli değil." + Environment.NewLine + Environment.NewLine +
+                    "Boş bırakırsanız çalgının varsayılan ücreti kullanılır." + Environment.NewLine +
+                    "Örnek: 500 veya 500,50",
+                    "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtUcret.Focus();
+                return;
+            }
+
             string ad = txtAd.Text.Trim();
             string soyad = txtSoyad.Text.Trim();
             string calgi = lstCalgilar.SelectedItem.ToString();
@@ -201,12 +245,12 @@ namespace RORAMuzikMerkezi
 
             if (duzenlenen == null)
             {
-                VeriYoneticisi.OgrenciEkle(ad, soyad, telefon, calgi);
+                VeriYoneticisi.OgrenciEkle(ad, soyad, telefon, calgi, aylikUcret);
                 MessageBox.Show("Öğrenci başarıyla kaydedildi!", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             else
             {
-                VeriYoneticisi.OgrenciGuncelle(duzenlenen.Id, ad, soyad, telefon, calgi);
+                VeriYoneticisi.OgrenciGuncelle(duzenlenen.Id, ad, soyad, telefon, calgi, aylikUcret);
                 MessageBox.Show("Öğrenci bilgileri güncellendi!", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             this.DialogResult = DialogResult.OK;

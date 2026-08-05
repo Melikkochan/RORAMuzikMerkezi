@@ -15,6 +15,10 @@ namespace RORAMuzikMerkezi
         public List<DersKaydi> DersKayitlari { get; set; } = new List<DersKaydi>();
         public List<OdemeKaydi> OdemeKayitlari { get; set; } = new List<OdemeKaydi>();
 
+        // Bu öğrenciye özel aylık ücret. null ise çalgının varsayılan ücreti
+        // kullanılır. Nullable seçildi ki "ücretsiz" (0) ile "tanımsız" ayrılabilsin.
+        public decimal? AylikUcret { get; set; }
+
         public string TamAd => $"{Ad} {Soyad}";
     }
 
@@ -46,6 +50,15 @@ namespace RORAMuzikMerkezi
         public string AyYilStr => $"{Yil}/{Ay:D2}";
     }
 
+    // Çalgı başına varsayılan aylık ücret. Dictionary XmlSerializer ile
+    // serileştirilemediği için liste olarak tutulur.
+    [Serializable]
+    public class CalgiUcreti
+    {
+        public string Calgi { get; set; }
+        public decimal Ucret { get; set; }
+    }
+
     [Serializable]
     public class Veriler
     {
@@ -53,5 +66,6 @@ namespace RORAMuzikMerkezi
         public int SonOgrenciId { get; set; } = 0;
         public int SonDersId { get; set; } = 0;
         public int SonOdemeId { get; set; } = 0;
+        public List<CalgiUcreti> CalgiUcretleri { get; set; } = new List<CalgiUcreti>();
     }
 }
