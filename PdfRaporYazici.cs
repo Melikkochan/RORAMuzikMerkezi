@@ -58,7 +58,8 @@ namespace RORAMuzikMerkezi
         private int siradaki;
         private int sayfaNo;
         private Image logo;
-        private Rectangle logoAlani;   // logonun boş kenarları kırpılmış hâli
+        private Rectangle logoAlani;    // çizilecek alan: dolu alan + güvenlik payı
+        private Rectangle logoIcerik;   // payı olmayan gerçek dolu alan
 
         private static CultureInfo TrKultur { get { return new CultureInfo("tr-TR"); } }
 
@@ -158,10 +159,29 @@ namespace RORAMuzikMerkezi
             siradaki = 0;
             sayfaNo = 0;
 
-            // Logo bulunamazsa rapor logosuz üretilir; Varliklar.Resim zaten
-            // dosya yoksa null döner, çizim tarafı bunu karşılıyor.
-            logo = Varliklar.Resim("rora1.png");
-            logoAlani = logo != null ? DoluAlan(logo) : Rectangle.Empty;
+            // Rapor rora.jpeg kullanır, splash ekranındaki rora1.png'yi değil:
+            // o dosyada madalyon dört yanından hafifçe kırpılmış, büyük
+            // basıldığında kenarları düz görünüyor. rora.jpeg'de madalyon tam
+            // ve çözünürlüğü iki katı. Dosya yoksa rora1.png'ye düşülür; ikisi
+            // de yoksa rapor logosuz üretilir, Varliklar.Resim null döner.
+            logo = Varliklar.Resim("rora.jpeg") ?? Varliklar.Resim("rora1.png");
+            if (logo != null)
+            {
+                // Çizerken tarama adımının ve yumuşak kenarların kaybolmaması
+                // için birkaç piksel pay bırakılır; dairesel kırpma ise payın
+                // değil gerçek dolu alanın sınırına oturur.
+                const int Pay = 3;
+                logoIcerik = DoluAlan(logo);
+                logoAlani = Rectangle.Intersect(
+                    new Rectangle(logoIcerik.X - Pay, logoIcerik.Y - Pay,
+                                  logoIcerik.Width + Pay * 2, logoIcerik.Height + Pay * 2),
+                    new Rectangle(0, 0, logo.Width, logo.Height));
+            }
+            else
+            {
+                logoAlani = Rectangle.Empty;
+                logoIcerik = Rectangle.Empty;
+            }
 
             try
             {
@@ -224,13 +244,6 @@ namespace RORAMuzikMerkezi
                 }
 
                 if (sagX < 0 || altY < 0) return new Rectangle(0, 0, bmp.Width, bmp.Height);
-
-                // Tarama adımı ve yumuşak kenarlar için birkaç piksel pay bırak
-                const int Pay = 3;
-                solX = Math.Max(0, solX - Pay);
-                ustY = Math.Max(0, ustY - Pay);
-                sagX = Math.Min(bmp.Width - 1, sagX + Pay);
-                altY = Math.Min(bmp.Height - 1, altY + Pay);
 
                 return new Rectangle(solX, ustY, sagX - solX + 1, altY - ustY + 1);
             }
@@ -406,16 +419,52 @@ namespace RORAMuzikMerkezi
             return y + 20;
         }
 
+        // Kırpma dairesi, çizilen alan içinde gerçek dolu alanın karşılığına
+        // oturtulur; böylece pay olarak bırakılan boş şerit dışarıda kalır.
+        // Madalyon tam daire olmadığı için ayrıca binde birkaç içeri çekilir,
+        // yoksa çevresindeki koyu gölge ince bir halka olarak görünüyor.
+        private RectangleF KirpmaDairesi(Rectangle hedef)
+        {
+            float olcekX = (float)hedef.Width / logoAlani.Width;
+            float olcekY = (float)hedef.Height / logoAlani.Height;
+
+            var daire = new RectangleF(
+                hedef.X + (logoIcerik.X - logoAlani.X) * olcekX,
+                hedef.Y + (logoIcerik.Y - logoAlani.Y) * olcekY,
+                logoIcerik.Width * olcekX,
+                logoIcerik.Height * olcekY);
+
+            daire.Inflate(-daire.Width * 0.015f, -daire.Height * 0.015f);
+            return daire;
+        }
+
         private int LogoGenisligi(int yukseklik)
         {
             return (int)Math.Round(yukseklik * ((double)logoAlani.Width / logoAlani.Height));
         }
 
+        // Logo yuvarlak bir madalyon; dairesel kırpmayla çizilir. Bu, rora.jpeg'in
+        // siyah zemininin köşelerde görünmesini engeller — dosya JPEG olduğu için
+        // saydamlık taşımıyor, zemin başka türlü temizlenemiyor.
         private void LogoCiz(Graphics g, int x, int y, int genislik, int yukseklik)
         {
-            g.DrawImage(logo, new Rectangle(x, y, genislik, yukseklik),
-                        logoAlani.X, logoAlani.Y, logoAlani.Width, logoAlani.Height,
-                        GraphicsUnit.Pixel);
+            var hedef = new Rectangle(x, y, genislik, yukseklik);
+            var durum = g.Save();
+            try
+            {
+                using (var yol = new System.Drawing.Drawing2D.GraphicsPath())
+                {
+                    yol.AddEllipse(KirpmaDairesi(hedef));
+                    g.SetClip(yol);
+                    g.DrawImage(logo, hedef,
+                                logoAlani.X, logoAlani.Y, logoAlani.Width, logoAlani.Height,
+                                GraphicsUnit.Pixel);
+                }
+            }
+            finally
+            {
+                g.Restore(durum);
+            }
         }
 
         private int DevamBasligiCiz(Graphics g, int sol, int y, Font fUstBilgi, Brush gri, Pen cizgi)
