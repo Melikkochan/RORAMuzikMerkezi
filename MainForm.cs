@@ -60,7 +60,13 @@ namespace RORAMuzikMerkezi
                 var gecen = DateTime.Now.AddMonths(-1);
                 OzetRaporHazirla(gecen.Year, gecen.Month);
             });
-            menuRapor.DropDownItems.AddRange(new ToolStripItem[] { menuOzetRapor, menuOncekiAy });
+            var menuPdfBuAy = new ToolStripMenuItem("📕 Bu Ay Raporu (PDF)", null, (s, e) => PdfRaporHazirla(DateTime.Now.Year, DateTime.Now.Month));
+            var menuPdfOncekiAy = new ToolStripMenuItem("📕 Önceki Ay Raporu (PDF)", null, (s, e) => {
+                var gecen = DateTime.Now.AddMonths(-1);
+                PdfRaporHazirla(gecen.Year, gecen.Month);
+            });
+            menuRapor.DropDownItems.AddRange(new ToolStripItem[] {
+                menuOzetRapor, menuOncekiAy, new ToolStripSeparator(), menuPdfBuAy, menuPdfOncekiAy });
 
             var menuHakkinda = new ToolStripMenuItem("ℹ️ Hakkında") { ForeColor = Color.White, Font = new Font("Segoe UI", 10) };
             menuHakkinda.Click += (s, e) => MessageBox.Show(
@@ -462,6 +468,55 @@ namespace RORAMuzikMerkezi
             lblGenelAra.Location = new Point(SolSinir, 14);
             txtGenelAra.Location = new Point(SolSinir + 30, 13);
             txtGenelAra.Width = kutuGenisligi;
+        }
+
+        // Aynı raporu PDF olarak üretir. Metin raporu değişmeden çalışmaya
+        // devam eder; bu ek bir çıktı biçimidir.
+        private void PdfRaporHazirla(int yil, int ay)
+        {
+            if (!PdfRaporYazici.YaziciKullanilabilirMi())
+            {
+                MessageBox.Show(
+                    $"PDF üretimi için gereken \"{PdfRaporYazici.YaziciAdi}\" yazıcısı bulunamadı." + Environment.NewLine + Environment.NewLine +
+                    "Bu yazıcı Windows 10 ve üzeri sürümlerde standart olarak gelir." + Environment.NewLine +
+                    "Kaldırılmışsa Denetim Masası > Aygıtlar ve Yazıcılar üzerinden yeniden eklenebilir." + Environment.NewLine + Environment.NewLine +
+                    "Metin raporu (.txt) etkilenmez, kullanılabilir durumda.",
+                    "PDF Üretilemiyor", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            string ayAdi = new DateTime(yil, ay, 1).ToString("MMMM_yyyy", new System.Globalization.CultureInfo("tr-TR"));
+
+            using (var sfd = new SaveFileDialog())
+            {
+                sfd.Title = "Raporu PDF olarak kaydet";
+                sfd.Filter = "PDF dosyası (*.pdf)|*.pdf";
+                sfd.FileName = $"RORA_Rapor_{ayAdi}.pdf";
+                sfd.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                if (sfd.ShowDialog(this) != DialogResult.OK) return;
+
+                Cursor eskiImlec = this.Cursor;
+                this.Cursor = Cursors.WaitCursor;
+                try
+                {
+                    new PdfRaporYazici(yil, ay).Yazdir(sfd.FileName);
+                    this.Cursor = eskiImlec;
+
+                    if (MessageBox.Show(
+                        $"PDF kaydedildi:{Environment.NewLine}{sfd.FileName}{Environment.NewLine}{Environment.NewLine}Şimdi açmak ister misiniz?",
+                        "Rapor Hazır", MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
+                    {
+                        System.Diagnostics.Process.Start(sfd.FileName);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    this.Cursor = eskiImlec;
+                    MessageBox.Show(
+                        $"PDF oluşturulamadı.{Environment.NewLine}{Environment.NewLine}{ex.Message}",
+                        "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
         }
 
         // Tüm çalgılardaki öğrenciler arasında arar. Sekme içi aramayla aynı
