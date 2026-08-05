@@ -277,7 +277,7 @@ namespace RORAMuzikMerkezi
             Kaydet();
         }
 
-        public static void OdemeYap(int ogrenciId, int yil, int ay)
+        public static void OdemeYap(int ogrenciId, int yil, int ay, decimal tutar = 0m)
         {
             var ogrenci = Veriler.Ogrenciler.FirstOrDefault(o => o.Id == ogrenciId);
             if (ogrenci == null) return;
@@ -297,6 +297,7 @@ namespace RORAMuzikMerkezi
             }
             odeme.OdemeYapildi = true;
             odeme.OdemeTarihi = DateTime.Now;
+            odeme.Tutar = tutar;
             Kaydet();
         }
         public static void OdemeGeriAl(int ogrenciId, int yil, int ay)
@@ -309,9 +310,26 @@ namespace RORAMuzikMerkezi
             {
                 odeme.OdemeYapildi = false;
                 odeme.OdemeTarihi = null;
+                odeme.Tutar = 0m;
                 Kaydet();
             }
         }
+        // Belirtilen ay için tahsil edilen tutar. Ödeme yoksa veya alan hiç
+        // doldurulmamışsa 0 döner.
+        public static decimal OdemeTutari(int ogrenciId, int yil, int ay)
+        {
+            var ogrenci = Veriler.Ogrenciler.FirstOrDefault(o => o.Id == ogrenciId);
+            if (ogrenci == null) return 0m;
+            var odeme = ogrenci.OdemeKayitlari.FirstOrDefault(o => o.Yil == yil && o.Ay == ay);
+            return (odeme != null && odeme.OdemeYapildi) ? odeme.Tutar : 0m;
+        }
+
+        // Bir ayda tüm öğrencilerden tahsil edilen toplam
+        public static decimal AylikToplamGelir(int yil, int ay)
+        {
+            return Veriler.Ogrenciler.Sum(o => OdemeTutari(o.Id, yil, ay));
+        }
+
         public static bool OdemeYapildiMi(int ogrenciId, int yil, int ay)
         {
             var ogrenci = Veriler.Ogrenciler.FirstOrDefault(o => o.Id == ogrenciId);
@@ -377,6 +395,12 @@ namespace RORAMuzikMerkezi
             catch { }
         }
 
+        // Tutarları rapor ve arayüzde aynı biçimde göstermek için tek nokta
+        public static string TutarYazi(decimal tutar)
+        {
+            return tutar.ToString("N2", new System.Globalization.CultureInfo("tr-TR")) + " ₺";
+        }
+
         public static string OzetRaporOlustur(int yil, int ay)
         {
             string ayAdi = new DateTime(yil, ay, 1).ToString("MMMM yyyy", new System.Globalization.CultureInfo("tr-TR"));
@@ -394,8 +418,8 @@ namespace RORAMuzikMerkezi
             {
                 var ogrenciler = Veriler.Ogrenciler.Where(o => o.Calgı == calgi).ToList();
                 sb.AppendLine($"--- {calgi.ToUpper()} ---");
-                sb.AppendLine($"{"Ad Soyad",-25} {"Tel",-13} {"H1",-4} {"H2",-4} {"H3",-4} {"H4",-4} {"Toplam",-8} {"Ödeme"}");
-                sb.AppendLine(new string('-', 72));
+                sb.AppendLine($"{"Ad Soyad",-25} {"Tel",-13} {"H1",-4} {"H2",-4} {"H3",-4} {"H4",-4} {"Toplam",-8} {"Ödeme",-10} {"Tutar",10}");
+                sb.AppendLine(new string('-', 84));
 
                 foreach (var ogr in ogrenciler)
                 {
@@ -406,13 +430,15 @@ namespace RORAMuzikMerkezi
                     int toplam = (h1 ? 1 : 0) + (h2 ? 1 : 0) + (h3 ? 1 : 0) + (h4 ? 1 : 0);
                     bool odeme = OdemeYapildiMi(ogr.Id, yil, ay);
 
-                    sb.AppendLine($"{ogr.TamAd,-25} {ogr.Telefon,-13} {(h1?"✓":"✗"),-4} {(h2?"✓":"✗"),-4} {(h3?"✓":"✗"),-4} {(h4?"✓":"✗"),-4} {toplam,-8} {(odeme ? "Ödendi" : "Ödenmedi")}");
+                    decimal tutar = OdemeTutari(ogr.Id, yil, ay);
+                    sb.AppendLine($"{ogr.TamAd,-25} {ogr.Telefon,-13} {(h1?"✓":"✗"),-4} {(h2?"✓":"✗"),-4} {(h3?"✓":"✗"),-4} {(h4?"✓":"✗"),-4} {toplam,-8} {(odeme ? "Ödendi" : "Ödenmedi"),-10} {TutarYazi(tutar),10}");
                 }
 
                 int toplamOgrenci = ogrenciler.Count;
                 int odeyenler = ogrenciler.Count(o => OdemeYapildiMi(o.Id, yil, ay));
                 sb.AppendLine();
-                sb.AppendLine($"  Toplam: {toplamOgrenci} öğrenci | Ödeme Yapan: {odeyenler} | Yapmayan: {toplamOgrenci - odeyenler}");
+                decimal grupTahsilat = ogrenciler.Sum(o => OdemeTutari(o.Id, yil, ay));
+                sb.AppendLine($"  Toplam: {toplamOgrenci} öğrenci | Ödeme Yapan: {odeyenler} | Yapmayan: {toplamOgrenci - odeyenler} | Tahsilat: {TutarYazi(grupTahsilat)}");
                 sb.AppendLine();
             }
 
@@ -422,6 +448,7 @@ namespace RORAMuzikMerkezi
             sb.AppendLine($"GENEL TOPLAM: {genelToplam} öğrenci");
             sb.AppendLine($"ÖDEME YAPAN : {genelOdeyen} öğrenci");
             sb.AppendLine($"ÖDEME YAPMAYAN: {genelToplam - genelOdeyen} öğrenci");
+            sb.AppendLine($"TOPLAM TAHSİLAT: {TutarYazi(AylikToplamGelir(yil, ay))}");
             sb.AppendLine("========================================");
 
             return sb.ToString();

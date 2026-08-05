@@ -287,12 +287,17 @@ namespace RORAMuzikMerkezi
                 bool h3 = VeriYoneticisi.HaftaDersAldiMi(ogr.Id, secilenYil, secilenAy, 3);
                 bool h4 = VeriYoneticisi.HaftaDersAldiMi(ogr.Id, secilenYil, secilenAy, 4);
 
+                decimal tutar = VeriYoneticisi.OdemeTutari(ogr.Id, secilenYil, secilenAy);
+                string odemeYazi = odeme
+                    ? (tutar > 0m ? $"✅ {VeriYoneticisi.TutarYazi(tutar)}" : "✅ Ödendi")
+                    : "❌ Ödenmedi";
+
                 int rowIdx = dgvOgrenciler.Rows.Add(
                     ogr.Id,
                     ogr.TamAd,
                     ogr.Telefon,
                     h1, h2, h3, h4,
-                    odeme ? "✅ Ödendi" : "❌ Ödenmedi"
+                    odemeYazi
                 );
 
                 var row = dgvOgrenciler.Rows[rowIdx];
@@ -405,9 +410,20 @@ namespace RORAMuzikMerkezi
                 return;
             }
 
-            VeriYoneticisi.OdemeYap(id, secilenYil, secilenAy);
+            string ayYaziAdi = new DateTime(secilenYil, secilenAy, 1)
+                .ToString("MMMM yyyy", new System.Globalization.CultureInfo("tr-TR"));
+
+            decimal tutar;
+            using (var tutarFormu = new TutarGirisFormu(ogr.TamAd, ayYaziAdi))
+            {
+                if (tutarFormu.ShowDialog(this) != DialogResult.OK) return;
+                tutar = tutarFormu.Tutar;
+            }
+
+            VeriYoneticisi.OdemeYap(id, secilenYil, secilenAy, tutar);
             ListeyiYenile();
-            MessageBox.Show($"{ogr.TamAd} için ödeme alındı. ✅", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show($"{ogr.TamAd} için {VeriYoneticisi.TutarYazi(tutar)} ödeme alındı. ✅",
+                "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         private void BtnOdemeIptal_Click(object sender, EventArgs e)
         {
