@@ -26,7 +26,7 @@ namespace RORAMuzikMerkezi
         // yükseklikleri AutoScaleMode ile ölçeklenmediği için tutamaç
         // oluştuğunda bu değerlerden yeniden hesaplanıyor.
         private const int BaslikYuksekligi = 40;
-        private const int SatirYuksekligi = 36;
+        private const int SatirYuksekligi = 42;
 
         public CalgiSekmesi(string calgi)
         {
@@ -43,20 +43,20 @@ namespace RORAMuzikMerkezi
             this.AutoScaleMode = AutoScaleMode.Dpi;
 
             this.Dock = DockStyle.Fill;
-            this.BackColor = Color.FromArgb(248, 248, 252);
+            this.BackColor = Renkler.Zemin;
 
             // Üst panel
             panelUst = new Panel
             {
                 Dock = DockStyle.Top,
                 Height = 60,
-                BackColor = Color.FromArgb(60, 80, 150)
+                BackColor = Renkler.Lacivert
             };
 
             lblBilgi = new Label
             {
-                ForeColor = Color.White,
-                Font = new Font("Segoe UI", 12, FontStyle.Bold),
+                ForeColor = Renkler.MetinTers,
+                Font = Yazilar.AltBaslik,
                 Location = new Point(10, 15),
                 Size = new Size(300, 30),
                 TextAlign = ContentAlignment.MiddleLeft
@@ -65,8 +65,8 @@ namespace RORAMuzikMerkezi
             var lblAyFiltre = new Label
             {
                 Text = "Ay:",
-                ForeColor = Color.White,
-                Font = new Font("Segoe UI", 10),
+                ForeColor = Renkler.MetinTers,
+                Font = Yazilar.Govde,
                 Location = new Point(320, 18),
                 Size = new Size(30, 25)
             };
@@ -98,8 +98,8 @@ namespace RORAMuzikMerkezi
             var lblAra = new Label
             {
                 Text = "Ara:",
-                ForeColor = Color.White,
-                Font = new Font("Segoe UI", 10),
+                ForeColor = Renkler.MetinTers,
+                Font = Yazilar.Govde,
                 Location = new Point(560, 18),
                 Size = new Size(36, 25)
             };
@@ -125,8 +125,8 @@ namespace RORAMuzikMerkezi
                 SelectionMode = DataGridViewSelectionMode.FullRowSelect,
                 MultiSelect = false,
                 BorderStyle = BorderStyle.None,
-                BackgroundColor = Color.White,
-                GridColor = Color.FromArgb(220, 220, 235),
+                BackgroundColor = Renkler.Yuzey,
+                GridColor = Renkler.Cizgi,
                 ColumnHeadersHeight = BaslikYuksekligi,
                 RowTemplate = { Height = SatirYuksekligi },
                 Font = new Font("Segoe UI", 10),
@@ -136,25 +136,26 @@ namespace RORAMuzikMerkezi
 
             dgvOgrenciler.ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
             {
-                BackColor = Color.FromArgb(240, 240, 250),
-                ForeColor = Color.FromArgb(60, 60, 120),
-                Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                BackColor = Renkler.Yuzey,
+                ForeColor = Renkler.Lacivert,
+                Font = Yazilar.GovdeKalin,
                 Alignment = DataGridViewContentAlignment.MiddleCenter,
                 Padding = new Padding(5)
             };
 
             dgvOgrenciler.DefaultCellStyle = new DataGridViewCellStyle
             {
-                SelectionBackColor = Color.FromArgb(200, 210, 255),
-                SelectionForeColor = Color.Black,
+                SelectionBackColor = Renkler.SatirSecili,
+                SelectionForeColor = Renkler.Metin,
+                ForeColor = Renkler.Metin,
                 Padding = new Padding(5, 0, 5, 0)
             };
 
             dgvOgrenciler.AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
             {
-                BackColor = Color.FromArgb(248, 248, 255),
-                SelectionBackColor = Color.FromArgb(200, 210, 255),
-                SelectionForeColor = Color.Black
+                BackColor = Renkler.YuzeyVurgu,
+                SelectionBackColor = Renkler.SatirSecili,
+                SelectionForeColor = Renkler.Metin
             };
 
             // Sütunlar
@@ -208,21 +209,27 @@ namespace RORAMuzikMerkezi
                 OdemeDurumunuDegistir((int)kimlik);
             };
 
-            // Sütunun tıklanabilir olduğu imleçten anlaşılsın
+            // Sütunun tıklanabilir olduğu imleçten anlaşılsın; ayrıca imlecin
+            // hangi satırda olduğu belli olsun diye satır hafifçe vurgulanır.
             dgvOgrenciler.CellMouseEnter += (s, e) =>
             {
                 bool odemeSutunu = e.RowIndex >= 0 && e.ColumnIndex >= 0
                     && dgvOgrenciler.Columns[e.ColumnIndex].Name == "colOdeme";
                 dgvOgrenciler.Cursor = odemeSutunu ? Cursors.Hand : Cursors.Default;
+                SatiriVurgula(e.RowIndex, true);
             };
-            dgvOgrenciler.CellMouseLeave += (s, e) => dgvOgrenciler.Cursor = Cursors.Default;
+            dgvOgrenciler.CellMouseLeave += (s, e) =>
+            {
+                dgvOgrenciler.Cursor = Cursors.Default;
+                SatiriVurgula(e.RowIndex, false);
+            };
 
             // Alt panel
             panelAlt = new Panel
             {
                 Dock = DockStyle.Bottom,
                 Height = 58,
-                BackColor = Color.FromArgb(240, 240, 248)
+                BackColor = Renkler.Zemin
             };
 
             btnOdemeYapildi = new Button
@@ -231,8 +238,8 @@ namespace RORAMuzikMerkezi
                 Location = new Point(10, 10),
                 Size = new Size(210, 38),
                 Font = new Font("Segoe UI", 9, FontStyle.Bold),
-                BackColor = Color.FromArgb(40, 120, 200),
-                ForeColor = Color.White,
+                BackColor = Renkler.Lacivert,
+                ForeColor = Renkler.MetinTers,
                 FlatStyle = FlatStyle.Flat,
                 Cursor = Cursors.Hand
             };
@@ -245,12 +252,13 @@ namespace RORAMuzikMerkezi
                 Location = new Point(415, 10),
                 Size = new Size(145, 38),
                 Font = new Font("Segoe UI", 9, FontStyle.Bold),
-                BackColor = Color.FromArgb(90, 110, 190),
-                ForeColor = Color.White,
+                BackColor = Renkler.Yuzey,
+                ForeColor = Renkler.Lacivert,
                 FlatStyle = FlatStyle.Flat,
                 Cursor = Cursors.Hand
             };
-            btnDuzenle.FlatAppearance.BorderSize = 0;
+            btnDuzenle.FlatAppearance.BorderSize = 1;
+            btnDuzenle.FlatAppearance.BorderColor = Renkler.Cizgi;
             btnDuzenle.Click += (s, e) => OgrenciDuzenle();
 
             btnOgrenciSil = new Button
@@ -259,12 +267,13 @@ namespace RORAMuzikMerkezi
                 Location = new Point(570, 10),
                 Size = new Size(160, 38),
                 Font = new Font("Segoe UI", 9, FontStyle.Bold),
-                BackColor = Color.FromArgb(200, 60, 60),
-                ForeColor = Color.White,
+                BackColor = Renkler.Yuzey,
+                ForeColor = Renkler.Olumsuz,
                 FlatStyle = FlatStyle.Flat,
                 Cursor = Cursors.Hand
             };
-            btnOgrenciSil.FlatAppearance.BorderSize = 0;
+            btnOgrenciSil.FlatAppearance.BorderSize = 1;
+            btnOgrenciSil.FlatAppearance.BorderColor = Renkler.Cizgi;
             btnOgrenciSil.Click += BtnOgrenciSil_Click;
 
             var lblAciklama = new Label
@@ -272,8 +281,8 @@ namespace RORAMuzikMerkezi
                 Text = "💡 Hafta kutucuklarına ve ödeme sütununa tıklayarak kayıt yapabilirsiniz",
                 Location = new Point(745, 18),
                 Size = new Size(450, 22),
-                Font = new Font("Segoe UI", 9),
-                ForeColor = Color.FromArgb(100, 100, 140)
+                Font = Yazilar.Kucuk,
+                ForeColor = Renkler.MetinSolgun
             };
             var btnOdemeIptal = new Button
             {
@@ -281,16 +290,31 @@ namespace RORAMuzikMerkezi
                 Location = new Point(230, 10),
                 Size = new Size(175, 38),
                 Font = new Font("Segoe UI", 9, FontStyle.Bold),
-                BackColor = Color.FromArgb(180, 60, 60),
-                ForeColor = Color.White,
+                BackColor = Renkler.Yuzey,
+                ForeColor = Renkler.Olumsuz,
                 FlatStyle = FlatStyle.Flat,
                 Cursor = Cursors.Hand
             };
-            btnOdemeIptal.FlatAppearance.BorderSize = 0;
+            btnOdemeIptal.FlatAppearance.BorderSize = 1;
+            btnOdemeIptal.FlatAppearance.BorderColor = Renkler.Cizgi;
             btnOdemeIptal.Click += BtnOdemeIptal_Click;
             panelAlt.Controls.AddRange(new Control[] { btnOdemeYapildi, btnOdemeIptal, btnDuzenle, btnOgrenciSil, lblAciklama });
 
             this.Controls.AddRange(new Control[] { dgvOgrenciler, panelUst, panelAlt });
+        }
+
+        // Satırın kendi zemini (tek/çift satır) korunarak vurgu veriliyor;
+        // vurgu kalkınca satır eski rengine döner.
+        private void SatiriVurgula(int satirNo, bool vurgula)
+        {
+            if (satirNo < 0 || satirNo >= dgvOgrenciler.Rows.Count) return;
+
+            var satir = dgvOgrenciler.Rows[satirNo];
+            if (satir.Selected) return;
+
+            satir.DefaultCellStyle.BackColor = vurgula
+                ? Renkler.SatirUzerinde
+                : (satirNo % 2 == 1 ? Renkler.YuzeyVurgu : Renkler.Yuzey);
         }
 
         // Tutamaç oluşana kadar DeviceDpi güvenilir değil; tablonun DPI'a
@@ -355,7 +379,10 @@ namespace RORAMuzikMerkezi
                 );
 
                 var row = dgvOgrenciler.Rows[rowIdx];
-                row.Cells["colOdeme"].Style.ForeColor = odeme ? Color.FromArgb(30, 130, 60) : Color.FromArgb(190, 50, 50);
+                row.Cells["colOdeme"].Style.ForeColor = odeme ? Renkler.Olumlu : Renkler.Olumsuz;
+                // Satır seçiliyken seçim rengi hücrenin rengini ezip ödeme
+                // durumunu görünmez kılıyordu; seçili hâli de ayrıca veriliyor.
+                row.Cells["colOdeme"].Style.SelectionForeColor = odeme ? Renkler.Olumlu : Renkler.Olumsuz;
                 row.Cells["colOdeme"].Style.Font = new Font("Segoe UI", 10, FontStyle.Bold);
             }
 
@@ -422,7 +449,10 @@ namespace RORAMuzikMerkezi
             // Ödeme sütunu rengini güncelle (satırı yenilemeden)
             bool odeme = VeriYoneticisi.OdemeYapildiMi(ogrenciId, secilenYil, secilenAy);
             var row = dgvOgrenciler.Rows[e.RowIndex];
-            row.Cells["colOdeme"].Style.ForeColor = odeme ? Color.FromArgb(30, 130, 60) : Color.FromArgb(190, 50, 50);
+            row.Cells["colOdeme"].Style.ForeColor = odeme ? Renkler.Olumlu : Renkler.Olumsuz;
+                // Satır seçiliyken seçim rengi hücrenin rengini ezip ödeme
+                // durumunu görünmez kılıyordu; seçili hâli de ayrıca veriliyor.
+                row.Cells["colOdeme"].Style.SelectionForeColor = odeme ? Renkler.Olumlu : Renkler.Olumsuz;
         }
 
         // Ödeme sütununa tıklanınca durum ters çevrilir. Ders kutucukları da

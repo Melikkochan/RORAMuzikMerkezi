@@ -32,13 +32,13 @@ namespace RORAMuzikMerkezi
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
-            this.BackColor = Color.FromArgb(245, 245, 250);
+            this.BackColor = Renkler.Zemin;
 
             var lblBaslik = new Label
             {
                 Text = "🗓️ Rapor Ayını Seçin",
                 Font = new Font("Segoe UI", 13, FontStyle.Bold),
-                ForeColor = Color.FromArgb(60, 60, 120),
+                ForeColor = Renkler.Lacivert,
                 Location = new Point(15, 15),
                 Size = new Size(360, 30)
             };
@@ -85,7 +85,7 @@ namespace RORAMuzikMerkezi
             {
                 Text = "Seçtiğiniz ay için hangi biçimde rapor istediğinizi seçin.",
                 Font = new Font("Segoe UI", 8),
-                ForeColor = Color.FromArgb(120, 120, 140),
+                ForeColor = Renkler.MetinSolgun,
                 Location = new Point(15, 95),
                 Size = new Size(360, 20)
             };
@@ -96,7 +96,7 @@ namespace RORAMuzikMerkezi
                 Location = new Point(15, 125),
                 Size = new Size(115, 34),
                 Font = new Font("Segoe UI", 9, FontStyle.Bold),
-                BackColor = Color.FromArgb(70, 90, 160),
+                BackColor = Renkler.Lacivert,
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat
             };
@@ -109,7 +109,7 @@ namespace RORAMuzikMerkezi
                 Location = new Point(140, 125),
                 Size = new Size(115, 34),
                 Font = new Font("Segoe UI", 9, FontStyle.Bold),
-                BackColor = Color.FromArgb(50, 150, 80),
+                BackColor = Renkler.LacivertOrta,
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat
             };
@@ -122,8 +122,8 @@ namespace RORAMuzikMerkezi
                 Location = new Point(265, 125),
                 Size = new Size(103, 34),
                 Font = new Font("Segoe UI", 9),
-                BackColor = Color.FromArgb(200, 70, 70),
-                ForeColor = Color.White,
+                BackColor = Renkler.Yuzey,
+                ForeColor = Renkler.MetinSolgun,
                 FlatStyle = FlatStyle.Flat,
                 DialogResult = DialogResult.Cancel
             };
