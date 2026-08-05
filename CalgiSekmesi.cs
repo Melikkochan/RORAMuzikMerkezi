@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Text;
 using System.Windows.Forms;
 
 namespace RORAMuzikMerkezi
@@ -16,6 +17,7 @@ namespace RORAMuzikMerkezi
         public event EventHandler OgrenciGuncellendi;
         private Label lblBilgi;
         private ComboBox cmbAy, cmbYil;
+        private TextBox txtAra;
         private Panel panelUst, panelAlt;
 
         // Checkbox sütun adları
@@ -83,7 +85,25 @@ namespace RORAMuzikMerkezi
             cmbYil.SelectedItem = DateTime.Now.Year;
             cmbYil.SelectedIndexChanged += (s, e) => ListeyiYenile();
 
-            panelUst.Controls.AddRange(new Control[] { lblBilgi, lblAyFiltre, cmbAy, cmbYil });
+            var lblAra = new Label
+            {
+                Text = "Ara:",
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 10),
+                Location = new Point(560, 18),
+                Size = new Size(36, 25)
+            };
+
+            txtAra = new TextBox
+            {
+                Location = new Point(600, 17),
+                Size = new Size(220, 28),
+                Font = new Font("Segoe UI", 9)
+            };
+            // Yazdıkça filtrele: ad soyad veya telefon içinde arar
+            txtAra.TextChanged += (s, e) => ListeyiYenile();
+
+            panelUst.Controls.AddRange(new Control[] { lblBilgi, lblAyFiltre, cmbAy, cmbYil, lblAra, txtAra });
 
             // DataGridView
             dgvOgrenciler = new DataGridView
@@ -248,8 +268,14 @@ namespace RORAMuzikMerkezi
             int secilenAy = cmbAy.SelectedIndex + 1;
             int secilenYil = cmbYil.SelectedItem != null ? (int)cmbYil.SelectedItem : DateTime.Now.Year;
 
-            var ogrenciler = VeriYoneticisi.CalginaGoreOgrenciler(calgiAdi);
-            lblBilgi.Text = $"🎵 {calgiAdi}  |  {ogrenciler.Count} Öğrenci";
+            var tumOgrenciler = VeriYoneticisi.CalginaGoreOgrenciler(calgiAdi);
+            string arama = txtAra == null ? "" : txtAra.Text.Trim();
+            var ogrenciler = OgrencileriFiltrele(tumOgrenciler, arama);
+
+            if (arama.Length == 0)
+                lblBilgi.Text = $"🎵 {calgiAdi}  |  {tumOgrenciler.Count} Öğrenci";
+            else
+                lblBilgi.Text = $"🎵 {calgiAdi}  |  {ogrenciler.Count} / {tumOgrenciler.Count} Öğrenci";
 
             foreach (var ogr in ogrenciler)
             {
@@ -283,6 +309,54 @@ namespace RORAMuzikMerkezi
                 string sutun = dgvOgrenciler.Columns[e.ColumnIndex].Name;
                 if (sutun == "colAd" || sutun == "colTelefon") OgrenciDuzenle();
             };
+        }
+
+        // Ad, soyad veya telefon alanında geçen metne göre süzer.
+        // Karşılaştırma büyük/küçük harf ve Türkçe karakter duyarsızdır.
+        private static List<Ogrenci> OgrencileriFiltrele(List<Ogrenci> kaynak, string arama)
+        {
+            if (string.IsNullOrWhiteSpace(arama)) return kaynak;
+
+            return kaynak.Where(o =>
+                Iceriyor(o.TamAd, arama) ||
+                Iceriyor(o.Telefon, arama)
+            ).ToList();
+        }
+
+        private static bool Iceriyor(string metin, string aranan)
+        {
+            if (string.IsNullOrEmpty(metin)) return false;
+            return AramaIcinNormalize(metin).IndexOf(AramaIcinNormalize(aranan), StringComparison.Ordinal) >= 0;
+        }
+
+        // Aramayı Türkçe karakterlere karşı duyarsız hâle getirir.
+        //
+        // Gerekçe: Türkçede I/ı ile İ/i ayrı harf çiftleridir. Kültüre duyarlı
+        // karşılaştırmada \"CIVAN\" ile \"civan\", \"BİLAL\" ile \"BILAL\" eşleşmez.
+        // Bu teknik olarak doğrudur ama arama kutusunda kullanıcıyı engeller:
+        // klavyesine göre farklı i yazan kullanıcı öğrenciyi bulamaz.
+        // Bu yüzden i, ı, İ, I hepsi tek bir harfe indirgenir; şapkalı ve
+        // noktalı diğer harfler de aynı biçimde sadeleştirilir.
+        private static string AramaIcinNormalize(string metin)
+        {
+            if (string.IsNullOrEmpty(metin)) return string.Empty;
+
+            var sb = new StringBuilder(metin.Length);
+            foreach (char karakter in metin)
+            {
+                char k = karakter;
+                switch (k)
+                {
+                    case 'İ': case 'I': case 'ı': k = 'i'; break;
+                    case 'Ş': case 'ş': k = 's'; break;
+                    case 'Ğ': case 'ğ': k = 'g'; break;
+                    case 'Ü': case 'ü': k = 'u'; break;
+                    case 'Ö': case 'ö': k = 'o'; break;
+                    case 'Ç': case 'ç': k = 'c'; break;
+                }
+                sb.Append(char.ToLowerInvariant(k));
+            }
+            return sb.ToString();
         }
 
         private void DgvOgrenciler_CellValueChanged(object sender, DataGridViewCellEventArgs e)
