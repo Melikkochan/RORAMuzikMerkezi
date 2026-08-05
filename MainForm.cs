@@ -19,6 +19,7 @@ namespace RORAMuzikMerkezi
         public MainForm()
         {
             VeriYoneticisi.Yukle();
+            VeriYoneticisi.OtomatikYedekAl();
             VeriYoneticisi.AylikOdemeKayitlariniOlustur();
             InitializeComponent();
             SekmeleriBuild();
@@ -60,7 +61,13 @@ namespace RORAMuzikMerkezi
                 "RORA Sanat Merkezi\nÖğrenci Takip Sistemi v1.0\n\nTüm hakları saklıdır.\nMelik KOÇHAN tarafından geliştirildi",
                 "Hakkında", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-            menuStrip.Items.AddRange(new ToolStripItem[] { menuOgrenci, menuRapor, menuHakkinda });
+            var menuVeri = new ToolStripMenuItem("💾 Veri") { ForeColor = Color.White, Font = new Font("Segoe UI", 10) };
+            var menuYedekAl = new ToolStripMenuItem("📤 Yedek Al...", null, (s, e) => YedekAl());
+            var menuGeriYukle = new ToolStripMenuItem("📥 Yedekten Geri Yükle...", null, (s, e) => YedektenGeriYukle());
+            var menuKlasorAc = new ToolStripMenuItem("📂 Veri Klasörünü Aç", null, (s, e) => VeriKlasorunuAc());
+            menuVeri.DropDownItems.AddRange(new ToolStripItem[] { menuYedekAl, menuGeriYukle, new ToolStripSeparator(), menuKlasorAc });
+
+            menuStrip.Items.AddRange(new ToolStripItem[] { menuOgrenci, menuRapor, menuVeri, menuHakkinda });
 
             // Ana buton çubuğu
             var toolPanel = new Panel
@@ -375,6 +382,75 @@ namespace RORAMuzikMerkezi
         private void GuncelleStatusBar()
         {
             lblDurum.Text = $"RORA Sanat Merkezi  |  {DateTime.Now:dd MMMM yyyy}  |  Toplam Öğrenci: {VeriYoneticisi.Veriler.Ogrenciler.Count}";
+        }
+
+        private void YedekAl()
+        {
+            using (var sfd = new SaveFileDialog())
+            {
+                sfd.Title = "Yedek dosyasını kaydet";
+                sfd.Filter = "XML dosyası (*.xml)|*.xml";
+                sfd.FileName = $"RORA_Yedek_{DateTime.Now:yyyyMMdd_HHmm}.xml";
+                sfd.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+                if (sfd.ShowDialog(this) != DialogResult.OK) return;
+
+                try
+                {
+                    VeriYoneticisi.YedekAl(sfd.FileName);
+                    MessageBox.Show($"Yedek alındı:{Environment.NewLine}{sfd.FileName}",
+                        "Yedekleme", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Yedek alınamadı.{Environment.NewLine}{Environment.NewLine}{ex.Message}",
+                        "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private void YedektenGeriYukle()
+        {
+            using (var ofd = new OpenFileDialog())
+            {
+                ofd.Title = "Geri yüklenecek yedeği seçin";
+                ofd.Filter = "XML dosyası (*.xml)|*.xml";
+                ofd.InitialDirectory = VeriYoneticisi.YedekKlasorYolu;
+                if (ofd.ShowDialog(this) != DialogResult.OK) return;
+
+                if (MessageBox.Show(
+                    "Mevcut veriler seçilen yedekle değiştirilecek." + Environment.NewLine + Environment.NewLine +
+                    "Değiştirmeden önce şu anki verinin bir kopyası otomatik olarak saklanacak." + Environment.NewLine + Environment.NewLine +
+                    "Devam edilsin mi?",
+                    "Geri Yükleme Onayı", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes) return;
+
+                try
+                {
+                    VeriYoneticisi.GeriYukle(ofd.FileName);
+                    SekmeleriBuild();
+                    MessageBox.Show($"Geri yükleme tamamlandı.{Environment.NewLine}Toplam {VeriYoneticisi.Veriler.Ogrenciler.Count} öğrenci yüklendi.",
+                        "Geri Yükleme", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(
+                        "Seçilen dosya geri yüklenemedi. Mevcut verilere dokunulmadı." + Environment.NewLine + Environment.NewLine + ex.Message,
+                        "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private void VeriKlasorunuAc()
+        {
+            try
+            {
+                System.Diagnostics.Process.Start("explorer.exe",
+                    Path.GetDirectoryName(VeriYoneticisi.VeriDosyaYolu));
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Klasör açılamadı.{Environment.NewLine}{ex.Message}",
+                    "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         private void OdemeHatirlatici()

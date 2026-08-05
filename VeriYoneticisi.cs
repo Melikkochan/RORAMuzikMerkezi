@@ -13,6 +13,13 @@ namespace RORAMuzikMerkezi
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "RORAMuzikMerkezi", "veriler.xml");
 
+        private static readonly string YedekKlasoru = Path.Combine(
+            Path.GetDirectoryName(VeriDosyasi), "yedekler");
+
+        // Kullanıcıya dosya konumunu gösterebilmek için
+        public static string VeriDosyaYolu { get { return VeriDosyasi; } }
+        public static string YedekKlasorYolu { get { return YedekKlasoru; } }
+
         public static Veriler Veriler { get; private set; } = new Veriler();
 
         public static void Yukle()
@@ -299,6 +306,63 @@ namespace RORAMuzikMerkezi
             if (ogrenci == null) return false;
             var odeme = ogrenci.OdemeKayitlari.FirstOrDefault(o => o.Yil == yil && o.Ay == ay);
             return odeme?.OdemeYapildi ?? false;
+        }
+
+        // Bellekteki son durumu diske yazar, sonra seçilen konuma kopyalar.
+        // Hata olursa istisna yukarı taşınır; çağıran taraf kullanıcıyı bilgilendirir.
+        public static void YedekAl(string hedefYol)
+        {
+            Kaydet();
+            File.Copy(VeriDosyasi, hedefYol, true);
+        }
+
+        // Seçilen dosyayı önce doğrular; okunamıyorsa mevcut verilere hiç dokunmadan
+        // istisna fırlatır. Doğrulama geçerse, mevcut veri kenara alınıp yenisi yüklenir.
+        public static void GeriYukle(string kaynakYol)
+        {
+            Veriler dogrulanan;
+            var serializer = new XmlSerializer(typeof(Veriler));
+            using (var reader = new StreamReader(kaynakYol))
+            {
+                dogrulanan = (Veriler)serializer.Deserialize(reader);
+            }
+
+            if (File.Exists(VeriDosyasi))
+            {
+                string oncesi = Path.Combine(
+                    Path.GetDirectoryName(VeriDosyasi),
+                    $"veriler.geriyukleme-oncesi.{DateTime.Now:yyyyMMdd_HHmmss}.xml");
+                File.Copy(VeriDosyasi, oncesi, true);
+            }
+
+            Veriler = dogrulanan;
+            Kaydet();
+        }
+
+        // Uygulama açılışında günde bir kez çağrılır. Son saklanacakGun kadar
+        // otomatik yedek tutulur, eskiler silinir.
+        //
+        // Bu metot hatayı bilerek yutar: yedekleme en iyi çaba ile yapılan,
+        // veri kaybettirmeyen bir işlemdir ve başarısız olması uygulamanın
+        // açılmasını engellememelidir. Elle yedeklemede (YedekAl) hatalar
+        // kullanıcıya bildirilir.
+        public static void OtomatikYedekAl(int saklanacakGun = 7)
+        {
+            try
+            {
+                if (!File.Exists(VeriDosyasi)) return;
+                if (!Directory.Exists(YedekKlasoru)) Directory.CreateDirectory(YedekKlasoru);
+
+                string hedef = Path.Combine(YedekKlasoru, $"otomatik_{DateTime.Now:yyyyMMdd}.xml");
+                if (!File.Exists(hedef)) File.Copy(VeriDosyasi, hedef);
+
+                var eskiler = new DirectoryInfo(YedekKlasoru)
+                    .GetFiles("otomatik_*.xml")
+                    .OrderByDescending(f => f.Name)
+                    .Skip(saklanacakGun);
+                foreach (var f in eskiler) f.Delete();
+            }
+            catch { }
         }
 
         public static string OzetRaporOlustur(int yil, int ay)
