@@ -57,9 +57,7 @@ namespace RORAMuzikMerkezi
         private readonly List<Oge> ogeler = new List<Oge>();
         private int siradaki;
         private int sayfaNo;
-        private Image logo;
-        private Rectangle logoAlani;    // çizilecek alan: dolu alan + güvenlik payı
-        private Rectangle logoIcerik;   // payı olmayan gerçek dolu alan
+        private Image logo;   // kırpılmış, yuvarlatılmış, basıma hazır hâli
 
         private static CultureInfo TrKultur { get { return new CultureInfo("tr-TR"); } }
 
@@ -159,29 +157,7 @@ namespace RORAMuzikMerkezi
             siradaki = 0;
             sayfaNo = 0;
 
-            // Rapor rora.jpeg kullanır, splash ekranındaki rora1.png'yi değil:
-            // o dosyada madalyon dört yanından hafifçe kırpılmış, büyük
-            // basıldığında kenarları düz görünüyor. rora.jpeg'de madalyon tam
-            // ve çözünürlüğü iki katı. Dosya yoksa rora1.png'ye düşülür; ikisi
-            // de yoksa rapor logosuz üretilir, Varliklar.Resim null döner.
-            logo = Varliklar.Resim("rora.jpeg") ?? Varliklar.Resim("rora1.png");
-            if (logo != null)
-            {
-                // Çizerken tarama adımının ve yumuşak kenarların kaybolmaması
-                // için birkaç piksel pay bırakılır; dairesel kırpma ise payın
-                // değil gerçek dolu alanın sınırına oturur.
-                const int Pay = 3;
-                logoIcerik = DoluAlan(logo);
-                logoAlani = Rectangle.Intersect(
-                    new Rectangle(logoIcerik.X - Pay, logoIcerik.Y - Pay,
-                                  logoIcerik.Width + Pay * 2, logoIcerik.Height + Pay * 2),
-                    new Rectangle(0, 0, logo.Width, logo.Height));
-            }
-            else
-            {
-                logoAlani = Rectangle.Empty;
-                logoIcerik = Rectangle.Empty;
-            }
+            LogoyuHazirla();
 
             try
             {
@@ -206,13 +182,62 @@ namespace RORAMuzikMerkezi
             }
             finally
             {
-                // Image.FromFile dosyayı kilitli tutar; bırakılmazsa logo
-                // dosyası ikinci rapora kadar kilitli kalır.
                 if (logo != null) { logo.Dispose(); logo = null; }
             }
 
             if (!TamamlanmayiBekle(hedefYol, TimeSpan.FromSeconds(60)))
                 throw new IOException("PDF dosyası oluşturulamadı. Yazıcı çıktıyı yazamamış olabilir.");
+        }
+
+        // Logo sayfaya çizilmeden önce bellekte hazırlanır: boş çerçevesi
+        // kırpılır, madalyonun dışı beyaza boyanır. Sayfaya çizilen şey böylece
+        // sıradan bir dörtgen resim olur.
+        //
+        // Bu dolambaç şundan: kırpma bölgesi (SetClip) ve kaynak dörtgen alan
+        // isteyen DrawImage, yazdırma sürücüsünde bitmap üzerindekinden farklı
+        // davranıyor. Aynı kod bitmap ve metafile üzerinde doğru çizerken PDF
+        // çıktısında logoyu büyütülmüş ve kaydırılmış basıyordu. Sayfaya sade
+        // bir resim göndermek bu farkı tümüyle ortadan kaldırıyor.
+        //
+        // Madalyonun dışı saydam değil beyaz bırakılıyor; sayfa zemini zaten
+        // beyaz ve yazdırma sürücülerinin saydamlığı güvenilir biçimde
+        // basmadığı biliniyor.
+        private void LogoyuHazirla()
+        {
+            // Rapor rora.jpeg kullanır, splash ekranındaki rora1.png'yi değil:
+            // o dosyada madalyon dört yanından hafifçe kırpılmış, büyük
+            // basıldığında kenarları düz görünüyor. rora.jpeg'de madalyon tam
+            // ve çözünürlüğü iki katı. İkisi de yoksa rapor logosuz üretilir.
+            using (var kaynak = Varliklar.Resim("rora.jpeg") ?? Varliklar.Resim("rora1.png"))
+            {
+                if (kaynak == null) return;
+
+                Rectangle icerik = DoluAlan(kaynak);
+                var hazir = new Bitmap(icerik.Width, icerik.Height);
+
+                using (var gl = Graphics.FromImage(hazir))
+                {
+                    gl.Clear(Color.White);
+                    gl.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                    gl.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+
+                    using (var yol = new System.Drawing.Drawing2D.GraphicsPath())
+                    {
+                        // Madalyon tam daire değil; çevresindeki koyu gölge ince
+                        // bir halka olarak kalmasın diye biraz içeri çekiliyor.
+                        var daire = new RectangleF(0, 0, icerik.Width, icerik.Height);
+                        daire.Inflate(-icerik.Width * 0.015f, -icerik.Height * 0.015f);
+                        yol.AddEllipse(daire);
+                        gl.SetClip(yol);
+
+                        gl.DrawImage(kaynak, new Rectangle(0, 0, icerik.Width, icerik.Height),
+                                     icerik.X, icerik.Y, icerik.Width, icerik.Height,
+                                     GraphicsUnit.Pixel);
+                    }
+                }
+
+                logo = hazir;
+            }
         }
 
         // Logo dosyasının çevresindeki boş çerçeveyi bulur. rora1.png geniş bir
@@ -419,52 +444,16 @@ namespace RORAMuzikMerkezi
             return y + 20;
         }
 
-        // Kırpma dairesi, çizilen alan içinde gerçek dolu alanın karşılığına
-        // oturtulur; böylece pay olarak bırakılan boş şerit dışarıda kalır.
-        // Madalyon tam daire olmadığı için ayrıca binde birkaç içeri çekilir,
-        // yoksa çevresindeki koyu gölge ince bir halka olarak görünüyor.
-        private RectangleF KirpmaDairesi(Rectangle hedef)
-        {
-            float olcekX = (float)hedef.Width / logoAlani.Width;
-            float olcekY = (float)hedef.Height / logoAlani.Height;
-
-            var daire = new RectangleF(
-                hedef.X + (logoIcerik.X - logoAlani.X) * olcekX,
-                hedef.Y + (logoIcerik.Y - logoAlani.Y) * olcekY,
-                logoIcerik.Width * olcekX,
-                logoIcerik.Height * olcekY);
-
-            daire.Inflate(-daire.Width * 0.015f, -daire.Height * 0.015f);
-            return daire;
-        }
-
         private int LogoGenisligi(int yukseklik)
         {
-            return (int)Math.Round(yukseklik * ((double)logoAlani.Width / logoAlani.Height));
+            return (int)Math.Round(yukseklik * ((double)logo.Width / logo.Height));
         }
 
-        // Logo yuvarlak bir madalyon; dairesel kırpmayla çizilir. Bu, rora.jpeg'in
-        // siyah zemininin köşelerde görünmesini engeller — dosya JPEG olduğu için
-        // saydamlık taşımıyor, zemin başka türlü temizlenemiyor.
+        // Logo LogoyuHazirla'da kırpılıp yuvarlatılmış hâlde bekliyor; sayfaya
+        // yalnızca ölçeklenerek çiziliyor.
         private void LogoCiz(Graphics g, int x, int y, int genislik, int yukseklik)
         {
-            var hedef = new Rectangle(x, y, genislik, yukseklik);
-            var durum = g.Save();
-            try
-            {
-                using (var yol = new System.Drawing.Drawing2D.GraphicsPath())
-                {
-                    yol.AddEllipse(KirpmaDairesi(hedef));
-                    g.SetClip(yol);
-                    g.DrawImage(logo, hedef,
-                                logoAlani.X, logoAlani.Y, logoAlani.Width, logoAlani.Height,
-                                GraphicsUnit.Pixel);
-                }
-            }
-            finally
-            {
-                g.Restore(durum);
-            }
+            g.DrawImage(logo, new Rectangle(x, y, genislik, yukseklik));
         }
 
         private int DevamBasligiCiz(Graphics g, int sol, int y, Font fUstBilgi, Brush gri, Pen cizgi)
