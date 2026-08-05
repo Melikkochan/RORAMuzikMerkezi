@@ -18,9 +18,39 @@ namespace RORAMuzikMerkezi
             "Klarnet", "Saksofon", "Ud", "Kanun", "Darbuka", "Diğer","Konservatuar"
         };
 
+        // null ise yeni kayıt, dolu ise mevcut öğrencinin düzenlenmesi
+        private Ogrenci duzenlenen;
+
         public OgrenciKayitForm()
         {
             InitializeComponent();
+        }
+
+        // Mevcut bir öğrencinin bilgilerini düzenlemek için kullanılır
+        public OgrenciKayitForm(Ogrenci ogrenci)
+        {
+            duzenlenen = ogrenci;
+            InitializeComponent();
+            AlanlariDoldur();
+        }
+
+        private void AlanlariDoldur()
+        {
+            this.Text = "Öğrenci Bilgilerini Düzenle";
+            lblBaslik.Text = "✏️ Öğrenci Bilgilerini Düzenle";
+            btnKaydet.Text = "✅ Güncelle";
+
+            txtAd.Text = duzenlenen.Ad;
+            txtSoyad.Text = duzenlenen.Soyad;
+            txtTelefon.Text = duzenlenen.Telefon;
+
+            int sira = lstCalgilar.Items.IndexOf(duzenlenen.Calgı);
+            if (sira < 0 && !string.IsNullOrWhiteSpace(duzenlenen.Calgı))
+            {
+                // Listede olmayan eski bir çalgı kaydı varsa kaybolmasın
+                sira = lstCalgilar.Items.Add(duzenlenen.Calgı);
+            }
+            if (sira >= 0) lstCalgilar.SelectedIndex = sira;
         }
 
         private void InitializeComponent()
@@ -123,14 +153,27 @@ namespace RORAMuzikMerkezi
                 return;
             }
 
-            VeriYoneticisi.OgrenciEkle(
-                txtAd.Text.Trim(),
-                txtSoyad.Text.Trim(),
-                txtTelefon.Text.Trim(),
-                lstCalgilar.SelectedItem.ToString()
-            );
-
-            MessageBox.Show("Öğrenci başarıyla kaydedildi!", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            if (duzenlenen == null)
+            {
+                VeriYoneticisi.OgrenciEkle(
+                    txtAd.Text.Trim(),
+                    txtSoyad.Text.Trim(),
+                    txtTelefon.Text.Trim(),
+                    lstCalgilar.SelectedItem.ToString()
+                );
+                MessageBox.Show("Öğrenci başarıyla kaydedildi!", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else
+            {
+                VeriYoneticisi.OgrenciGuncelle(
+                    duzenlenen.Id,
+                    txtAd.Text.Trim(),
+                    txtSoyad.Text.Trim(),
+                    txtTelefon.Text.Trim(),
+                    lstCalgilar.SelectedItem.ToString()
+                );
+                MessageBox.Show("Öğrenci bilgileri güncellendi!", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
             this.DialogResult = DialogResult.OK;
             this.Close();
         }
