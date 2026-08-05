@@ -414,7 +414,8 @@ namespace RORAMuzikMerkezi
                 .ToString("MMMM yyyy", new System.Globalization.CultureInfo("tr-TR"));
 
             decimal tutar;
-            using (var tutarFormu = new TutarGirisFormu(ogr.TamAd, ayYaziAdi))
+            decimal varsayilan = VeriYoneticisi.VarsayilanUcret(id);
+            using (var tutarFormu = new TutarGirisFormu(ogr.TamAd, ayYaziAdi, varsayilan))
             {
                 if (tutarFormu.ShowDialog(this) != DialogResult.OK) return;
                 tutar = tutarFormu.Tutar;

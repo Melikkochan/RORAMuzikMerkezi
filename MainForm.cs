@@ -67,7 +67,11 @@ namespace RORAMuzikMerkezi
             var menuKlasorAc = new ToolStripMenuItem("📂 Veri Klasörünü Aç", null, (s, e) => VeriKlasorunuAc());
             menuVeri.DropDownItems.AddRange(new ToolStripItem[] { menuYedekAl, menuGeriYukle, new ToolStripSeparator(), menuKlasorAc });
 
-            menuStrip.Items.AddRange(new ToolStripItem[] { menuOgrenci, menuRapor, menuVeri, menuHakkinda });
+            var menuUcret = new ToolStripMenuItem("💵 Ücretler") { ForeColor = Color.White, Font = new Font("Segoe UI", 10) };
+            var menuCalgiUcretleri = new ToolStripMenuItem("🎵 Çalgı Ücret Tanımları...", null, (s, e) => CalgiUcretleriniAc());
+            menuUcret.DropDownItems.Add(menuCalgiUcretleri);
+
+            menuStrip.Items.AddRange(new ToolStripItem[] { menuOgrenci, menuRapor, menuVeri, menuUcret, menuHakkinda });
 
             // Ana buton çubuğu
             var toolPanel = new Panel
@@ -387,6 +391,14 @@ namespace RORAMuzikMerkezi
         private void GuncelleStatusBar()
         {
             lblDurum.Text = $"RORA Sanat Merkezi  |  {DateTime.Now:dd MMMM yyyy}  |  Toplam Öğrenci: {VeriYoneticisi.Veriler.Ogrenciler.Count}";
+        }
+
+        private void CalgiUcretleriniAc()
+        {
+            using (var form = new UcretTanimFormu())
+            {
+                form.ShowDialog(this);
+            }
         }
 
         private void YedekAl()
