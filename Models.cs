@@ -38,6 +38,10 @@ namespace RORAMuzikMerkezi
         public int Yil { get; set; }
         public int Ay { get; set; }
         public bool OdemeYapildi { get; set; }
+
+        // Tahsil edilen tutar. Bu alan sonradan eklendi; eski veri
+        // dosyalarında bulunmadığı için XML okunurken 0 kabul edilir.
+        public decimal Tutar { get; set; }
         public DateTime? OdemeTarihi { get; set; }
         public string AyYilStr => $"{Yil}/{Ay:D2}";
     }

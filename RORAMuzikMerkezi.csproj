@@ -97,6 +97,9 @@
     </Compile>
     <Compile Include="VeriYoneticisi.cs" />
     <Compile Include="Varliklar.cs" />
+    <Compile Include="TutarGirisFormu.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
