@@ -1,0 +1,77 @@
+# ---------------------------------------------
+# RORAMuzikMerkezi - .NET Framework / Visual Studio
+# ---------------------------------------------
+
+# Derleme çıktıları
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio kullanıcı ve önbellek dosyaları
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# ReSharper / Rider
+_ReSharper*/
+*.[Rr]e[Ss]harper
+.idea/
+
+# Derleme ve hata ayıklama artıkları
+*.pdb
+*.ilk
+*.meta
+*.obj
+*.iobj
+*.ipdb
+*.tlog
+*.cache
+*.dll
+*.exe
+*.tmp
+*.tmp_proj
+*.vspscc
+*.vssscc
+
+# ClickOnce / yayınlama
+publish/
+[Pp]ublish[Pp]rofiles/
+*.publishproj
+*.publishsettings
+*.application
+*.manifest
+*.deploy
+
+# İmzalama anahtarları - asla depoya girmemeli
+*.pfx
+*.snk
+*.p12
+
+# NuGet
+packages/
+*.nupkg
+!packages/build/
+
+# Test sonuçları
+[Tt]est[Rr]esult*/
+*.trx
+*.coverage
+*.coveragexml
+
+# İşletim sistemi / editör artıkları
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.swp
+*~
+
+# Uygulama verisi (yerel çalıştırmada üretilir)
+veriler.xml
+RORA_Rapor_*.txt
