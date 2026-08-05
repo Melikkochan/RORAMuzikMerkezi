@@ -186,6 +186,10 @@ namespace RORAMuzikMerkezi
                 };
 
                 var sekme = new CalgiSekmesi(calgi);
+                // Çalgı değişikliğinde sekmelerin yeniden kurulması gerekir.
+                // BeginInvoke ile ertelenir; aksi hâlde sekme, kendi olayı
+                // işlenirken yok edilmiş olurdu.
+                sekme.OgrenciGuncellendi += (s, e) => this.BeginInvoke(new Action(TumSekmeletiYenile));
                 tab.Controls.Add(sekme);
                 calgiSekmeler[calgi] = sekme;
                 tabControl.TabPages.Add(tab);

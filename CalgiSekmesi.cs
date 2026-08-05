@@ -10,7 +10,10 @@ namespace RORAMuzikMerkezi
     {
         private string calgiAdi;
         private DataGridView dgvOgrenciler;
-        private Button btnOdemeYapildi, btnOgrenciSil;
+        private Button btnOdemeYapildi, btnOgrenciSil, btnDuzenle;
+
+        // Öğrencinin çalgısı değişince ana pencerenin sekmeleri yenilemesi gerekir
+        public event EventHandler OgrenciGuncellendi;
         private Label lblBilgi;
         private ComboBox cmbAy, cmbYil;
         private Panel panelUst, panelAlt;
@@ -147,6 +150,13 @@ namespace RORAMuzikMerkezi
 
             // Checkbox tıklanınca kaydet
             dgvOgrenciler.CellValueChanged += DgvOgrenciler_CellValueChanged;
+            // Ad veya telefon hücresine çift tıklayınca düzenleme formu açılır
+            dgvOgrenciler.CellDoubleClick += (s, e) =>
+            {
+                if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
+                string sutun = dgvOgrenciler.Columns[e.ColumnIndex].Name;
+                if (sutun == "colAd" || sutun == "colTelefon") OgrenciDuzenle();
+            };
             dgvOgrenciler.CurrentCellDirtyStateChanged += (s, e) =>
             {
                 if (dgvOgrenciler.IsCurrentCellDirty)
@@ -175,10 +185,24 @@ namespace RORAMuzikMerkezi
             btnOdemeYapildi.FlatAppearance.BorderSize = 0;
             btnOdemeYapildi.Click += BtnOdemeYapildi_Click;
 
+            btnDuzenle = new Button
+            {
+                Text = "✏️ Düzenle",
+                Location = new Point(415, 10),
+                Size = new Size(145, 38),
+                Font = new Font("Segoe UI", 9, FontStyle.Bold),
+                BackColor = Color.FromArgb(90, 110, 190),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
+            btnDuzenle.FlatAppearance.BorderSize = 0;
+            btnDuzenle.Click += (s, e) => OgrenciDuzenle();
+
             btnOgrenciSil = new Button
             {
                 Text = "🗑️ Öğrenci Sil",
-                Location = new Point(415, 10),
+                Location = new Point(570, 10),
                 Size = new Size(160, 38),
                 Font = new Font("Segoe UI", 9, FontStyle.Bold),
                 BackColor = Color.FromArgb(200, 60, 60),
@@ -192,7 +216,7 @@ namespace RORAMuzikMerkezi
             var lblAciklama = new Label
             {
                 Text = "💡 Hafta kutucuklarına tıklayarak ders kaydı yapabilirsiniz",
-                Location = new Point(620, 18),
+                Location = new Point(745, 18),
                 Size = new Size(450, 22),
                 Font = new Font("Segoe UI", 9),
                 ForeColor = Color.FromArgb(100, 100, 140)
@@ -210,7 +234,7 @@ namespace RORAMuzikMerkezi
             };
             btnOdemeIptal.FlatAppearance.BorderSize = 0;
             btnOdemeIptal.Click += BtnOdemeIptal_Click;
-            panelAlt.Controls.AddRange(new Control[] { btnOdemeYapildi, btnOdemeIptal, btnOgrenciSil, lblAciklama });
+            panelAlt.Controls.AddRange(new Control[] { btnOdemeYapildi, btnOdemeIptal, btnDuzenle, btnOgrenciSil, lblAciklama });
 
             this.Controls.AddRange(new Control[] { dgvOgrenciler, panelUst, panelAlt });
         }
@@ -252,6 +276,13 @@ namespace RORAMuzikMerkezi
 
             // Event'i tekrar aç
             dgvOgrenciler.CellValueChanged += DgvOgrenciler_CellValueChanged;
+            // Ad veya telefon hücresine çift tıklayınca düzenleme formu açılır
+            dgvOgrenciler.CellDoubleClick += (s, e) =>
+            {
+                if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
+                string sutun = dgvOgrenciler.Columns[e.ColumnIndex].Name;
+                if (sutun == "colAd" || sutun == "colTelefon") OgrenciDuzenle();
+            };
         }
 
         private void DgvOgrenciler_CellValueChanged(object sender, DataGridViewCellEventArgs e)
@@ -335,6 +366,33 @@ namespace RORAMuzikMerkezi
                 MessageBox.Show($"{ogr.TamAd} için ödeme geri alındı.",
                     "Tamam", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
+        }
+        // Seçili öğrencinin bilgilerini düzenleme formunda açar.
+        // Ders ve ödeme geçmişi korunur; yalnızca kimlik bilgileri güncellenir.
+        private void OgrenciDuzenle()
+        {
+            if (dgvOgrenciler.SelectedRows.Count == 0)
+            {
+                MessageBox.Show("Lütfen bir öğrenci seçin.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            int id = (int)dgvOgrenciler.SelectedRows[0].Cells["colId"].Value;
+            var ogr = VeriYoneticisi.Veriler.Ogrenciler.FirstOrDefault(o => o.Id == id);
+            if (ogr == null) return;
+
+            string oncekiCalgi = ogr.Calgı;
+
+            using (var form = new OgrenciKayitForm(ogr))
+            {
+                if (form.ShowDialog(this) != DialogResult.OK) return;
+            }
+
+            ListeyiYenile();
+
+            // Çalgı değiştiyse öğrenci artık başka sekmeye ait; sekmeleri ana pencere yeniler
+            if (!string.Equals(oncekiCalgi, ogr.Calgı, StringComparison.Ordinal))
+                OgrenciGuncellendi?.Invoke(this, EventArgs.Empty);
         }
         private void BtnOgrenciSil_Click(object sender, EventArgs e)
         {

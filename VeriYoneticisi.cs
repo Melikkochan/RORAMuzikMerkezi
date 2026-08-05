@@ -135,6 +135,20 @@ namespace RORAMuzikMerkezi
             }
         }
 
+        // Kayıtlı bir öğrencinin bilgilerini günceller. Ders ve ödeme kayıtları
+        // öğrenci nesnesinin içinde tutulduğu için bu işlemden etkilenmez.
+        public static bool OgrenciGuncelle(int ogrenciId, string ad, string soyad, string telefon, string calgi)
+        {
+            var ogrenci = Veriler.Ogrenciler.FirstOrDefault(o => o.Id == ogrenciId);
+            if (ogrenci == null) return false;
+
+            ogrenci.Ad = ad;
+            ogrenci.Soyad = soyad;
+            ogrenci.Telefon = telefon;
+            ogrenci.Calgı = calgi;
+            Kaydet();
+            return true;
+        }
         public static List<Ogrenci> CalginaGoreOgrenciler(string calgi)
         {
             return Veriler.Ogrenciler.Where(o => o.Calgı == calgi).ToList();
