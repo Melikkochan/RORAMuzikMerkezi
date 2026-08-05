@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -20,6 +20,11 @@ namespace RORAMuzikMerkezi
         private Label lblGenelAra;
         private Label lblLogo;
         private ListBox lstAramaSonuclari;
+
+        // Arama kutusu bu düğmenin sağından başlıyor. Sabit bir piksel değeri
+        // yerine düğmenin gerçek sınırı kullanılıyor: düğme ölçekle birlikte
+        // büyüyünce arama kutusu da kendiliğinden kayıyor.
+        private Button btnYenile;
         private readonly List<Ogrenci> aramaSonuclari = new List<Ogrenci>();
 
         public MainForm()
@@ -34,6 +39,11 @@ namespace RORAMuzikMerkezi
 
         private void InitializeComponent()
         {
+            // Yerleşim 96 DPI'a göre yazıldı; ölçekli ekranlarda
+            // konum ve boyutları WinForms bu ayarla kendisi büyütür.
+            this.AutoScaleDimensions = new System.Drawing.SizeF(Olcek.TasarimDpi, Olcek.TasarimDpi);
+            this.AutoScaleMode = AutoScaleMode.Dpi;
+
             this.Text = "🎵 RORA Sanat Merkezi - Öğrenci Takip Sistemi";
             this.Size = new Size(1000, 680);
             this.WindowState = FormWindowState.Maximized;
@@ -124,7 +134,7 @@ namespace RORAMuzikMerkezi
             btnRapor.FlatAppearance.BorderSize = 0;
             btnRapor.Click += (s, e) => OzetRaporHazirla(DateTime.Now.Year, DateTime.Now.Month);
 
-            var btnYenile = new Button
+            btnYenile = new Button
             {
                 Text = "🔄 Yenile",
                 Location = new Point(320, 9),
@@ -262,7 +272,10 @@ namespace RORAMuzikMerkezi
 
         private void OzetPanelOlustur(TabPage tab)
         {
-            var panel = new Panel { Dock = DockStyle.Fill, Padding = new Padding(20) };
+            // AutoScroll, ölçekli ekranlarda içerik pencereye sığmadığında
+            // kaydırma çubuğu çıkarır. Olmazsa alttaki liste sessizce kırpılır:
+            // %150 ölçekte, küçük ekranlı bir dizüstüde tam olarak bu oluyor.
+            var panel = new Panel { Dock = DockStyle.Fill, Padding = new Padding(20), AutoScroll = true };
 
             var lblBaslik = new Label
             {
@@ -453,23 +466,27 @@ namespace RORAMuzikMerkezi
         {
             if (txtGenelAra == null || lblGenelAra == null || lblLogo == null) return;
 
-            const int LogoAlani = 290;   // sağdaki logo etiketinin kapladığı yer
-            const int SolSinir = 445;    // düğmelerin bittiği nokta
-            const int EnDarKutu = 120;
+            // Konumlar sabit piksel yerine komşu denetimlerin gerçek sınırından
+            // türetiliyor. Bu denetimleri WinForms ölçekle birlikte büyüttüğü
+            // için hesap her ölçekte kendiliğinden doğru çıkıyor; yalnızca
+            // aradaki boşluklar tasarım pikseli olarak ölçekleniyor.
+            int bosluk = Olcek.Piksel(this, 20);
+            int solSinir = (btnYenile != null ? btnYenile.Right : Olcek.Piksel(this, 415)) + bosluk;
+            int logoAlani = (lblLogo.Width > 0 ? lblLogo.Width : Olcek.Piksel(this, 270)) + bosluk;
+            int enDarKutu = Olcek.Piksel(this, 120);
+            int enGenisKutu = Olcek.Piksel(this, 250);
 
-            int gerekenGenislik = SolSinir + 30 + EnDarKutu;
-            bool logoSigiyor = (toolPanel.ClientSize.Width - LogoAlani) >= gerekenGenislik;
+            int gerekenGenislik = solSinir + lblGenelAra.Width + bosluk + enDarKutu;
+            bool logoSigiyor = (toolPanel.ClientSize.Width - logoAlani) >= gerekenGenislik;
             lblLogo.Visible = logoSigiyor;
 
             int sagSinir = logoSigiyor
-                ? toolPanel.ClientSize.Width - LogoAlani
-                : toolPanel.ClientSize.Width - 10;
+                ? toolPanel.ClientSize.Width - logoAlani
+                : toolPanel.ClientSize.Width - Olcek.Piksel(this, 10);
 
-            int kutuGenisligi = Math.Max(EnDarKutu, Math.Min(250, sagSinir - SolSinir - 30));
-
-            lblGenelAra.Location = new Point(SolSinir, 14);
-            txtGenelAra.Location = new Point(SolSinir + 30, 13);
-            txtGenelAra.Width = kutuGenisligi;
+            lblGenelAra.Location = new Point(solSinir, Olcek.Piksel(this, 14));
+            txtGenelAra.Location = new Point(lblGenelAra.Right + Olcek.Piksel(this, 4), Olcek.Piksel(this, 13));
+            txtGenelAra.Width = Math.Max(enDarKutu, Math.Min(enGenisKutu, sagSinir - txtGenelAra.Left));
         }
 
         // "Bu Ay" ve "Önceki Ay" en sık istenenler, onlar menüde tek tıkla

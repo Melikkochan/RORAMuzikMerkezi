@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -22,6 +22,12 @@ namespace RORAMuzikMerkezi
         // Checkbox sütun adları
         private static readonly string[] HaftaSutunlari = { "colH1", "colH2", "colH3", "colH4" };
 
+        // Tasarım pikseli (96 DPI). DataGridView'in satır ve başlık
+        // yükseklikleri AutoScaleMode ile ölçeklenmediği için tutamaç
+        // oluştuğunda bu değerlerden yeniden hesaplanıyor.
+        private const int BaslikYuksekligi = 40;
+        private const int SatirYuksekligi = 36;
+
         public CalgiSekmesi(string calgi)
         {
             this.calgiAdi = calgi;
@@ -31,6 +37,11 @@ namespace RORAMuzikMerkezi
 
         private void InitializeComponent()
         {
+            // Yerleşim 96 DPI'a göre yazıldı; ölçekli ekranlarda
+            // konum ve boyutları WinForms bu ayarla kendisi büyütür.
+            this.AutoScaleDimensions = new System.Drawing.SizeF(Olcek.TasarimDpi, Olcek.TasarimDpi);
+            this.AutoScaleMode = AutoScaleMode.Dpi;
+
             this.Dock = DockStyle.Fill;
             this.BackColor = Color.FromArgb(248, 248, 252);
 
@@ -116,8 +127,8 @@ namespace RORAMuzikMerkezi
                 BorderStyle = BorderStyle.None,
                 BackgroundColor = Color.White,
                 GridColor = Color.FromArgb(220, 220, 235),
-                ColumnHeadersHeight = 40,
-                RowTemplate = { Height = 36 },
+                ColumnHeadersHeight = BaslikYuksekligi,
+                RowTemplate = { Height = SatirYuksekligi },
                 Font = new Font("Segoe UI", 10),
                 AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
                 CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal
@@ -280,6 +291,26 @@ namespace RORAMuzikMerkezi
             panelAlt.Controls.AddRange(new Control[] { btnOdemeYapildi, btnOdemeIptal, btnDuzenle, btnOgrenciSil, lblAciklama });
 
             this.Controls.AddRange(new Control[] { dgvOgrenciler, panelUst, panelAlt });
+        }
+
+        // Tutamaç oluşana kadar DeviceDpi güvenilir değil; tablonun DPI'a
+        // bağlı ölçüleri bu yüzden burada ayarlanıyor. Hesap her seferinde
+        // tasarım değerinden yapıldığı için tekrar çağrılması sorun değil.
+        protected override void OnHandleCreated(EventArgs e)
+        {
+            base.OnHandleCreated(e);
+            TabloOlculeriniAyarla();
+        }
+
+        private void TabloOlculeriniAyarla()
+        {
+            if (dgvOgrenciler == null) return;
+
+            dgvOgrenciler.ColumnHeadersHeight = Olcek.Piksel(this, BaslikYuksekligi);
+            dgvOgrenciler.RowTemplate.Height = Olcek.Piksel(this, SatirYuksekligi);
+
+            foreach (DataGridViewRow satir in dgvOgrenciler.Rows)
+                satir.Height = dgvOgrenciler.RowTemplate.Height;
         }
 
         public void ListeyiYenile()

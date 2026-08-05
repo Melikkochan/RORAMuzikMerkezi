@@ -98,6 +98,7 @@
     <Compile Include="VeriYoneticisi.cs" />
     <Compile Include="Varliklar.cs" />
     <Compile Include="Metin.cs" />
+    <Compile Include="Olcek.cs" />
     <Compile Include="PdfRaporYazici.cs" />
     <Compile Include="UcretTanimFormu.cs">
       <SubType>Form</SubType>

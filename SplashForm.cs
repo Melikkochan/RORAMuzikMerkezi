@@ -16,6 +16,11 @@ namespace RORAMuzikMerkezi
 
         public SplashForm()
         {
+            // Yerleşim 96 DPI'a göre yazıldı; ölçekli ekranlarda
+            // konum ve boyutları WinForms bu ayarla kendisi büyütür.
+            this.AutoScaleDimensions = new System.Drawing.SizeF(Olcek.TasarimDpi, Olcek.TasarimDpi);
+            this.AutoScaleMode = AutoScaleMode.Dpi;
+
             this.Text = "RORA Sanat Merkezi";
             this.Size = new Size(560, 340);
             this.StartPosition = FormStartPosition.CenterScreen;

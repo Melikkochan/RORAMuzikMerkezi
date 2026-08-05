@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Globalization;
 using System.Windows.Forms;
@@ -17,6 +17,11 @@ namespace RORAMuzikMerkezi
 
         public TutarGirisFormu(string ogrenciAdi, string ayAdi, decimal baslangicTutari = 0m)
         {
+            // Yerleşim 96 DPI'a göre yazıldı; ölçekli ekranlarda
+            // konum ve boyutları WinForms bu ayarla kendisi büyütür.
+            this.AutoScaleDimensions = new System.Drawing.SizeF(Olcek.TasarimDpi, Olcek.TasarimDpi);
+            this.AutoScaleMode = AutoScaleMode.Dpi;
+
             this.Text = "Ödeme Tutarı";
             this.Size = new Size(400, 210);
             this.StartPosition = FormStartPosition.CenterParent;
