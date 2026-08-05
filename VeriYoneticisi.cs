@@ -156,6 +156,18 @@ namespace RORAMuzikMerkezi
             Kaydet();
             return true;
         }
+        // Aynı ad, soyad ve çalgı ile kayıtlı başka bir öğrenci var mı?
+        // hariçTutulanId, düzenleme sırasında öğrencinin kendisini dışarıda
+        // bırakmak için kullanılır.
+        public static Ogrenci MukerrerBul(string ad, string soyad, string calgi, int haricTutulanId = 0)
+        {
+            return Veriler.Ogrenciler.FirstOrDefault(o =>
+                o.Id != haricTutulanId &&
+                string.Equals(o.Ad, ad, StringComparison.CurrentCultureIgnoreCase) &&
+                string.Equals(o.Soyad, soyad, StringComparison.CurrentCultureIgnoreCase) &&
+                string.Equals(o.Calgı, calgi, StringComparison.CurrentCultureIgnoreCase));
+        }
+
         public static List<Ogrenci> CalginaGoreOgrenciler(string calgi)
         {
             return Veriler.Ogrenciler.Where(o => o.Calgı == calgi).ToList();

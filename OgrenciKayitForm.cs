@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -140,6 +141,22 @@ namespace RORAMuzikMerkezi
             });
         }
 
+        // Telefon zorunlu değildir. Girilmişse biçimi kabaca doğrulanır:
+        // yalnızca rakam ve ayırıcı karakterler, 10-15 rakam.
+        private static bool TelefonGecerliMi(string telefon)
+        {
+            if (string.IsNullOrWhiteSpace(telefon)) return true;
+
+            foreach (char k in telefon)
+            {
+                bool kabul = char.IsDigit(k) || k == ' ' || k == '-' || k == '(' || k == ')' || k == '+';
+                if (!kabul) return false;
+            }
+
+            int rakam = telefon.Count(char.IsDigit);
+            return rakam >= 10 && rakam <= 15;
+        }
+
         private void BtnKaydet_Click(object sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(txtAd.Text) || string.IsNullOrWhiteSpace(txtSoyad.Text))
@@ -153,25 +170,43 @@ namespace RORAMuzikMerkezi
                 return;
             }
 
+            string telefon = txtTelefon.Text.Trim();
+            if (!TelefonGecerliMi(telefon))
+            {
+                MessageBox.Show(
+                    "Telefon numarası geçerli görünmüyor." + Environment.NewLine + Environment.NewLine +
+                    "Boş bırakabilirsiniz; girecekseniz 10-15 rakam içermelidir." + Environment.NewLine +
+                    "Boşluk, parantez, tire ve + işareti kullanılabilir.",
+                    "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtTelefon.Focus();
+                return;
+            }
+
+            string ad = txtAd.Text.Trim();
+            string soyad = txtSoyad.Text.Trim();
+            string calgi = lstCalgilar.SelectedItem.ToString();
+
+            // Mükerrer kayıt engellenmez, yalnızca uyarılır: aynı isimde iki
+            // farklı öğrenci gerçekten olabilir. Karar kullanıcıya bırakılır.
+            var mukerrer = VeriYoneticisi.MukerrerBul(ad, soyad, calgi, duzenlenen == null ? 0 : duzenlenen.Id);
+            if (mukerrer != null)
+            {
+                var cevap = MessageBox.Show(
+                    $"{mukerrer.TamAd} adında bir öğrenci {calgi} kursunda zaten kayıtlı." + Environment.NewLine + Environment.NewLine +
+                    "Aynı kişiyi iki kez kaydetmek ders ve ödeme takibini iki satıra böler." + Environment.NewLine + Environment.NewLine +
+                    "Yine de devam edilsin mi?",
+                    "Benzer Kayıt Bulundu", MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+                if (cevap != DialogResult.Yes) return;
+            }
+
             if (duzenlenen == null)
             {
-                VeriYoneticisi.OgrenciEkle(
-                    txtAd.Text.Trim(),
-                    txtSoyad.Text.Trim(),
-                    txtTelefon.Text.Trim(),
-                    lstCalgilar.SelectedItem.ToString()
-                );
+                VeriYoneticisi.OgrenciEkle(ad, soyad, telefon, calgi);
                 MessageBox.Show("Öğrenci başarıyla kaydedildi!", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             else
             {
-                VeriYoneticisi.OgrenciGuncelle(
-                    duzenlenen.Id,
-                    txtAd.Text.Trim(),
-                    txtSoyad.Text.Trim(),
-                    txtTelefon.Text.Trim(),
-                    lstCalgilar.SelectedItem.ToString()
-                );
+                VeriYoneticisi.OgrenciGuncelle(duzenlenen.Id, ad, soyad, telefon, calgi);
                 MessageBox.Show("Öğrenci bilgileri güncellendi!", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             this.DialogResult = DialogResult.OK;
