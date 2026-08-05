@@ -359,10 +359,15 @@ namespace RORAMuzikMerkezi
             }
             catch (Exception ex)
             {
-                // Dosyaya yazılamazsa önizleme göster
+                // Dosyaya yazılamazsa sebebini bildir ve önizleme göster
+                string uyari =
+                    $"Rapor masaüstüne kaydedilemedi: {ex.Message}" + Environment.NewLine +
+                    $"Denenen konum: {dosyaAdi}" + Environment.NewLine +
+                    new string('-', 72) + Environment.NewLine + Environment.NewLine;
+
                 var previewForm = new Form
                 {
-                    Text = $"Özet Rapor - {ay}/{yil}",
+                    Text = $"Özet Rapor - {ay}/{yil} (dosyaya yazılamadı)",
                     Size = new Size(650, 550),
                     StartPosition = FormStartPosition.CenterParent
                 };
@@ -372,7 +377,7 @@ namespace RORAMuzikMerkezi
                     Dock = DockStyle.Fill,
                     Font = new Font("Courier New", 10),
                     ScrollBars = ScrollBars.Both,
-                    Text = rapor
+                    Text = uyari + rapor
                 };
                 previewForm.Controls.Add(txt);
                 previewForm.ShowDialog(this);

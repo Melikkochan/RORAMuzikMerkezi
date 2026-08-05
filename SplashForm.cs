@@ -7,6 +7,11 @@ namespace RORAMuzikMerkezi
     public class SplashForm : Form
     {
         private Timer timer;
+
+        // Açılış ekranı süresi = (100 / IlerlemeAdimi) * TimerAraligi
+        // 2 * 25 ms  ->  50 adım  ->  yaklaşık 1,25 saniye
+        private const int TimerAraligi = 25;
+        private const int IlerlemeAdimi = 2;
         private ProgressBar progressBar;
 
         public SplashForm()
@@ -76,7 +81,7 @@ namespace RORAMuzikMerkezi
             };
 
             timer = new Timer();
-            timer.Interval = 25;
+            timer.Interval = TimerAraligi;
             timer.Tick += Timer_Tick;
 
             this.Controls.Add(logo);
@@ -91,9 +96,10 @@ namespace RORAMuzikMerkezi
 
         private void Timer_Tick(object sender, EventArgs e)
         {
-            if (progressBar.Value < 100)
+            if (progressBar.Value < progressBar.Maximum)
             {
-                progressBar.Value += 1+3/4;
+                // Math.Min olmadan, adım maksimumu aşarsa ArgumentOutOfRangeException fırlar
+                progressBar.Value = Math.Min(progressBar.Maximum, progressBar.Value + IlerlemeAdimi);
             }
             else
             {
