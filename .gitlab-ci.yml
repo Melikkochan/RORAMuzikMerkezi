@@ -1,0 +1,62 @@
+# RORAMuzikMerkezi - CI yapılandırması
+#
+# Proje .NET Framework 4.7.2 / Windows Forms hedefliyor ve gerçek MSBuild ile
+# derlenmeli. Bu yapılandırma, kendi bilgisayarınıza kurduğunuz bir Windows
+# runner'a göre yazıldı.
+#
+# Neden paylaşımlı runner değil:
+#   - GitLab.com'un ücretsiz planında paylaşımlı runner kullanmak hesap
+#     doğrulaması (kart) istiyor.
+#   - Linux runner'da ancak Mono ile derlenebilir; bu yaklaşık bir doğrulama.
+#     Windows Forms projesinde System.Deployment, ClickOnce ve tasarımcı
+#     tarafında davranış farkları olabilir. Yeşil bir Mono derlemesi, gerçek
+#     makinede derlendiğini kanıtlamıyor.
+#   - Yerel Windows runner doğrulama istemiyor, dakika sınırı yok ve gerçek
+#     MSBuild + .NET Framework kullanıyor.
+#
+# Runner kurulumu için docs/Installation.md, "Continuous integration" bölümü.
+
+stages:
+  - build
+
+variables:
+  CONFIG: Release
+
+workflow:
+  rules:
+    # Merge request açıldığında MR pipeline'ı çalışsın
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    # Açık MR'ı olan dalda ayrıca dal pipeline'ı çalışmasın (mükerrer olmasın)
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    # Diğer tüm dal push'larında çalışsın
+    - if: $CI_COMMIT_BRANCH
+
+derleme:
+  stage: build
+  # Runner'ı kaydederken bu etiketleri verin; iş yalnızca o runner'a düşer.
+  tags:
+    - windows
+    - msbuild
+  script:
+    # MSBuild yolu sabit yazılmıyor: Visual Studio sürümü ve kurulum yeri
+    # makineden makineye değişiyor. vswhere, Visual Studio ile birlikte gelen
+    # ve tam da bunun için var olan araç.
+    - |
+      $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+      if (-not (Test-Path $vswhere)) { throw "vswhere bulunamadi: $vswhere - Visual Studio kurulu mu?" }
+      $msbuild = & $vswhere -latest -products * -requires Microsoft.Component.MSBuild -find 'MSBuild\**\Bin\MSBuild.exe' | Select-Object -First 1
+      if (-not $msbuild) { throw "MSBuild bulunamadi. Visual Studio'da 'MSBuild' bileseni kurulu mu?" }
+      Write-Host "MSBuild: $msbuild"
+      & $msbuild RORAMuzikMerkezi.sln /p:Configuration=$env:CONFIG /nologo /verbosity:minimal
+      if ($LASTEXITCODE -ne 0) { throw "Derleme basarisiz (cikis kodu $LASTEXITCODE)" }
+    - |
+      $exe = "bin\$env:CONFIG\RORAMuzikMerkezi.exe"
+      if (-not (Test-Path $exe)) { throw "Beklenen cikti uretilmedi: $exe" }
+      Write-Host "Uretildi: $exe ($((Get-Item $exe).Length) bayt)"
+      Get-ChildItem "bin\$env:CONFIG"
+  artifacts:
+    name: "RORAMuzikMerkezi-$CI_COMMIT_SHORT_SHA"
+    paths:
+      - bin/Release/
+    expire_in: 1 week

@@ -71,3 +71,74 @@ There is no `develop` branch.
 ### Backing up your data before testing
 
 Running the application uses the real data file at `%AppData%\RORAMuzikMerkezi\veriler.xml`. Take a backup before running experimental builds — either copy the file aside, or use **💾 Veri → 📤 Yedek Al...** in the application. The automatic startup backup in `yedekler\` also covers you, but it only keeps the last 7 days.
+
+## Continuous Integration
+
+`.gitlab-ci.yml` builds the solution on every push and merge request and publishes the resulting `RORAMuzikMerkezi.exe` as an artifact. It has one job, `derleme`, and it verifies exactly one thing: that the repository still compiles from a clean checkout. There is no test suite, so a green pipeline says nothing about behaviour.
+
+### Why a local Windows runner
+
+The job needs real MSBuild and the .NET Framework, so it is written for a Windows runner you host yourself:
+
+- The Linux shared runners could only build through Mono, which is an approximation for a Windows Forms project — `System.Deployment`, ClickOnce and designer behaviour can differ. A green Mono build would not prove the project builds on a real machine.
+- A self-hosted Windows runner has no monthly minute limit and builds exactly the way you build locally.
+
+The trade-off is that the machine hosting the runner must be switched on for a pipeline to run. On a single-developer project that is usually your own computer.
+
+### Shared runners must be turned off
+
+This one is not obvious and it blocks everything until it is done.
+
+On GitLab.com's free plan, an account that has not completed identity verification cannot run CI jobs. The refusal happens when the pipeline is **created**, before any runner is chosen, so having your own runner does not help by itself:
+
+```
+POST /projects/:id/pipeline
+{"message":{"base":["Identity verification is required in order to run CI jobs"]}}
+```
+
+The requirement is tied to the project being able to use GitLab's shared compute. Turn shared runners off for the project and it no longer applies:
+
+**Settings → CI/CD → Runners → Shared runners → disable**, or:
+
+```
+PUT /projects/:id  {"shared_runners_enabled": false}
+```
+
+After that, pipelines are created normally and your own runner picks them up. Leave this setting off; turning it back on brings the verification requirement back.
+
+### Registering the runner
+
+The runner for this project is already registered and lives in `C:\Users\MELİK\gitlab-runner`. These are the steps that produced it, in case it has to be redone on another machine.
+
+1. Download the runner binary from GitLab's official downloads into a folder that will stay put — not a temporary directory.
+2. In GitLab, open **Settings → CI/CD → Runners** and create a project runner with the tags `windows` and `msbuild`. The job in `.gitlab-ci.yml` selects the runner by those tags, so they must match.
+3. Register with the **shell** executor, so the job runs PowerShell directly on the machine:
+
+   ```
+   gitlab-runner register --non-interactive --url https://gitlab.com/ --token <glrt-token> --executor shell --shell powershell
+   ```
+
+4. Run it. Either in the foreground for a one-off check:
+
+   ```
+   gitlab-runner run --working-directory C:\Users\MELİK\gitlab-runner
+   ```
+
+   or, so that it survives a reboot, as a Windows service from an **administrator** shell:
+
+   ```
+   gitlab-runner install --working-directory C:\Users\MELİK\gitlab-runner
+   gitlab-runner start
+   ```
+
+   Installing the service needs administrator rights; running it in the foreground does not.
+
+Visual Studio (or the Build Tools) with the **MSBuild** component and the **.NET Framework 4.7.2 Developer Pack** must be installed on that machine. The job locates MSBuild through `vswhere` rather than a hard-coded path, so it keeps working when Visual Studio is updated or installed elsewhere.
+
+### When the runner is not running
+
+Pipelines stay pending — no runner picks the job up. Nothing breaks, but nothing is verified either.
+
+For that reason **Settings → Merge requests → Pipelines must succeed** is deliberately left off. Turning it on while the runner only runs by hand would block every merge request whenever the machine is off. Turn it on once the runner is installed as a service.
+
+The manual equivalent is worth knowing regardless: clone the repository into an empty folder and build it there. That is the one failure this pipeline actually guards against — a repository that builds on your machine but not from a clean clone.
