@@ -7,6 +7,7 @@
 - Windows 10 or newer
 - .NET Framework 4.7.2 runtime
 - No server, database or internet connection is required
+- **Microsoft Print to PDF** — only for the PDF report. This printer ships with Windows and is normally present. PDF reports are produced by drawing to it through `System.Drawing.Printing`, which is what keeps the project free of external libraries. If it has been removed, the application reports a clear error for that one action; everything else, including the `.txt` report, keeps working.
 
 ### To build
 
@@ -33,10 +34,21 @@ The project file enables ClickOnce manifest signing and references `RORAMuzikMer
 
 ## Running the Built Application
 
-No installer is required. Copy `RORAMuzikMerkezi.exe` together with `favicon.ico` and `rora1.png` into the same folder and run it. The data file is created automatically on first launch at:
+No installer is required. Copy `RORAMuzikMerkezi.exe` together with all three image assets into the same folder and run it:
+
+| File | Used for |
+|---|---|
+| `favicon.ico` | Window and taskbar icon |
+| `rora1.png` | Splash screen logo |
+| `rora.jpeg` | Logo in the PDF report (falls back to `rora1.png` if missing) |
+
+The build copies all three into the output folder automatically. Assets are resolved relative to the executable, not the working directory, so a shortcut with a different "Start in" folder still finds them. A missing asset never crashes the application; that element is simply left out.
+
+The data file is created automatically on first launch, and backups are written next to it:
 
 ```
 %AppData%\RORAMuzikMerkezi\veriler.xml
+%AppData%\RORAMuzikMerkezi\yedekler\
 ```
 
 ## Repository Workflow
@@ -58,4 +70,4 @@ There is no `develop` branch.
 
 ### Backing up your data before testing
 
-Running the application uses the real data file at `%AppData%\RORAMuzikMerkezi\veriler.xml`. Copy it aside before running experimental builds.
+Running the application uses the real data file at `%AppData%\RORAMuzikMerkezi\veriler.xml`. Take a backup before running experimental builds — either copy the file aside, or use **💾 Veri → 📤 Yedek Al...** in the application. The automatic startup backup in `yedekler\` also covers you, but it only keeps the last 7 days.
