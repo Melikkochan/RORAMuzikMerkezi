@@ -11,6 +11,7 @@
 - Warn when a student with the same details is already registered
 - Organise students into tabs by instrument
 - Search students within a tab, and across all instruments at once
+- Show one student's history: lessons and payments month by month, total collected, and which months are still unpaid
 
 ### Lesson tracking
 

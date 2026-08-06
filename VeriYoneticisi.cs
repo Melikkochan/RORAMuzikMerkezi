@@ -386,6 +386,34 @@ namespace RORAMuzikMerkezi
             return odeme?.OdemeYapildi ?? false;
         }
 
+        // ---- Tek öğrencinin geçmişi ----
+
+        // O aya ait bir ödeme kaydı açılmış mı? Kayıt yoksa ay hiç işlenmemiş
+        // demektir; kayıt var ama OdemeYapildi false ise ödeme bekliyor
+        // demektir. İkisi farklı durumlar, geçmiş ekranı bunları ayırıyor.
+        public static bool OdemeKaydiVarMi(int ogrenciId, int yil, int ay)
+        {
+            var ogrenci = Veriler.Ogrenciler.FirstOrDefault(o => o.Id == ogrenciId);
+            if (ogrenci == null) return false;
+            return ogrenci.OdemeKayitlari.Any(o => o.Yil == yil && o.Ay == ay);
+        }
+
+        // Bir öğrenciden bugüne kadar tahsil edilen toplam
+        public static decimal OgrenciToplamTahsilat(int ogrenciId)
+        {
+            var ogrenci = Veriler.Ogrenciler.FirstOrDefault(o => o.Id == ogrenciId);
+            if (ogrenci == null) return 0m;
+            return ogrenci.OdemeKayitlari.Where(o => o.OdemeYapildi).Sum(o => o.Tutar);
+        }
+
+        // Bir öğrencinin bugüne kadar aldığı toplam ders
+        public static int OgrenciToplamDers(int ogrenciId)
+        {
+            var ogrenci = Veriler.Ogrenciler.FirstOrDefault(o => o.Id == ogrenciId);
+            if (ogrenci == null) return 0;
+            return ogrenci.DersKayitlari.Count(d => d.DersAlindi);
+        }
+
         // Bellekteki son durumu diske yazar, sonra seçilen konuma kopyalar.
         // Hata olursa istisna yukarı taşınır; çağıran taraf kullanıcıyı bilgilendirir.
         public static void YedekAl(string hedefYol)

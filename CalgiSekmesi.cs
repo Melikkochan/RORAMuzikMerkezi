@@ -10,7 +10,7 @@ namespace RORAMuzikMerkezi
     {
         private string calgiAdi;
         private DataGridView dgvOgrenciler;
-        private Button btnOdemeYapildi, btnOgrenciSil, btnDuzenle;
+        private Button btnOdemeYapildi, btnOgrenciSil, btnDuzenle, btnGecmis;
 
         // Öğrencinin çalgısı değişince ana pencerenin sekmeleri yenilemesi gerekir
         public event EventHandler OgrenciGuncellendi;
@@ -232,11 +232,15 @@ namespace RORAMuzikMerkezi
                 BackColor = Renkler.Zemin
             };
 
+            // Alt paneldeki beş düğme, pencerenin en dar hâlinde (800 piksel)
+            // de tamamen görünmeli. Genişlikler metin ölçüsüne göre seçildi;
+            // en geniş metin 137 piksel, en dar düğme 110. Sağdaki ipucu
+            // etiketi dekoratif olduğu için taşabilir, düğmeler taşamaz.
             btnOdemeYapildi = new Button
             {
                 Text = "💰 Bu Ay Ödeme Yapıldı",
                 Location = new Point(10, 10),
-                Size = new Size(210, 38),
+                Size = new Size(180, 38),
                 Font = new Font("Segoe UI", 9, FontStyle.Bold),
                 BackColor = Renkler.Lacivert,
                 ForeColor = Renkler.MetinTers,
@@ -249,8 +253,8 @@ namespace RORAMuzikMerkezi
             btnDuzenle = new Button
             {
                 Text = "✏️ Düzenle",
-                Location = new Point(415, 10),
-                Size = new Size(145, 38),
+                Location = new Point(361, 10),
+                Size = new Size(110, 38),
                 Font = new Font("Segoe UI", 9, FontStyle.Bold),
                 BackColor = Renkler.Yuzey,
                 ForeColor = Renkler.Lacivert,
@@ -261,11 +265,26 @@ namespace RORAMuzikMerkezi
             btnDuzenle.FlatAppearance.BorderColor = Renkler.Cizgi;
             btnDuzenle.Click += (s, e) => OgrenciDuzenle();
 
+            btnGecmis = new Button
+            {
+                Text = "📜 Geçmiş",
+                Location = new Point(479, 10),
+                Size = new Size(110, 38),
+                Font = new Font("Segoe UI", 9, FontStyle.Bold),
+                BackColor = Renkler.Yuzey,
+                ForeColor = Renkler.Lacivert,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
+            btnGecmis.FlatAppearance.BorderSize = 1;
+            btnGecmis.FlatAppearance.BorderColor = Renkler.Cizgi;
+            btnGecmis.Click += (s, e) => OgrenciGecmisiniAc();
+
             btnOgrenciSil = new Button
             {
                 Text = "🗑️ Öğrenci Sil",
-                Location = new Point(570, 10),
-                Size = new Size(160, 38),
+                Location = new Point(597, 10),
+                Size = new Size(125, 38),
                 Font = new Font("Segoe UI", 9, FontStyle.Bold),
                 BackColor = Renkler.Yuzey,
                 ForeColor = Renkler.Olumsuz,
@@ -279,7 +298,7 @@ namespace RORAMuzikMerkezi
             var lblAciklama = new Label
             {
                 Text = "💡 Hafta kutucuklarına ve ödeme sütununa tıklayarak kayıt yapabilirsiniz",
-                Location = new Point(745, 18),
+                Location = new Point(736, 18),
                 Size = new Size(450, 22),
                 Font = Yazilar.Kucuk,
                 ForeColor = Renkler.MetinSolgun
@@ -287,8 +306,8 @@ namespace RORAMuzikMerkezi
             var btnOdemeIptal = new Button
             {
                 Text = "❌ Ödeme Yapılmadı",
-                Location = new Point(230, 10),
-                Size = new Size(175, 38),
+                Location = new Point(198, 10),
+                Size = new Size(155, 38),
                 Font = new Font("Segoe UI", 9, FontStyle.Bold),
                 BackColor = Renkler.Yuzey,
                 ForeColor = Renkler.Olumsuz,
@@ -298,7 +317,7 @@ namespace RORAMuzikMerkezi
             btnOdemeIptal.FlatAppearance.BorderSize = 1;
             btnOdemeIptal.FlatAppearance.BorderColor = Renkler.Cizgi;
             btnOdemeIptal.Click += BtnOdemeIptal_Click;
-            panelAlt.Controls.AddRange(new Control[] { btnOdemeYapildi, btnOdemeIptal, btnDuzenle, btnOgrenciSil, lblAciklama });
+            panelAlt.Controls.AddRange(new Control[] { btnOdemeYapildi, btnOdemeIptal, btnDuzenle, btnGecmis, btnOgrenciSil, lblAciklama });
 
             this.Controls.AddRange(new Control[] { dgvOgrenciler, panelUst, panelAlt });
         }
@@ -579,6 +598,33 @@ namespace RORAMuzikMerkezi
             if (!string.Equals(oncekiCalgi, ogr.Calgı, StringComparison.Ordinal))
                 OgrenciGuncellendi?.Invoke(this, EventArgs.Empty);
         }
+        // Seçili öğrencinin ay ay geçmişini açar. Salt okunur bir ekran;
+        // buradan kayıt değiştirilmediği için liste yenilenmesi gerekmiyor.
+        private void OgrenciGecmisiniAc()
+        {
+            var ogr = SeciliOgrenci();
+            if (ogr == null) return;
+
+            using (var form = new OgrenciGecmisFormu(ogr))
+                form.ShowDialog(this);
+        }
+
+        // Seçili satırın öğrencisi. Seçim yoksa kullanıcıyı uyarır ve null
+        // döner; çağıran tarafların aynı uyarıyı tekrar yazmasına gerek kalmıyor.
+        private Ogrenci SeciliOgrenci()
+        {
+            if (dgvOgrenciler.SelectedRows.Count == 0)
+            {
+                MessageBox.Show("Lütfen bir öğrenci seçin.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return null;
+            }
+
+            var kimlik = dgvOgrenciler.SelectedRows[0].Cells["colId"].Value;
+            if (kimlik == null) return null;
+
+            return VeriYoneticisi.Veriler.Ogrenciler.FirstOrDefault(o => o.Id == (int)kimlik);
+        }
+
         private void BtnOgrenciSil_Click(object sender, EventArgs e)
         {
             if (dgvOgrenciler.SelectedRows.Count == 0)
