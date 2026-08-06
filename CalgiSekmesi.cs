@@ -157,7 +157,11 @@ namespace RORAMuzikMerkezi
             var colH3 = new DataGridViewCheckBoxColumn { Name = "colH3", HeaderText = "3. Hafta", FillWeight = 12, TrueValue = true, FalseValue = false };
             var colH4 = new DataGridViewCheckBoxColumn { Name = "colH4", HeaderText = "4. Hafta", FillWeight = 12, TrueValue = true, FalseValue = false };
 
-            var colOdeme = new DataGridViewTextBoxColumn { Name = "colOdeme", HeaderText = "Ödeme", FillWeight = 16, ReadOnly = true };
+            var colOdeme = new DataGridViewTextBoxColumn
+            {
+                Name = "colOdeme", HeaderText = "Ödeme", FillWeight = 16, ReadOnly = true,
+                ToolTipText = "Ödeme durumunu değiştirmek için tıklayın"
+            };
 
             dgvOgrenciler.Columns.AddRange(new DataGridViewColumn[] {
                 colId, colAd, colTelefon, colH1, colH2, colH3, colH4, colOdeme
@@ -181,6 +185,26 @@ namespace RORAMuzikMerkezi
                 if (dgvOgrenciler.IsCurrentCellDirty)
                     dgvOgrenciler.CommitEdit(DataGridViewDataErrorContexts.Commit);
             };
+
+            // Ödeme hücresine tıklayınca durum değişir
+            dgvOgrenciler.CellClick += (s, e) =>
+            {
+                if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
+                if (dgvOgrenciler.Columns[e.ColumnIndex].Name != "colOdeme") return;
+
+                var kimlik = dgvOgrenciler.Rows[e.RowIndex].Cells["colId"].Value;
+                if (kimlik == null) return;
+                OdemeDurumunuDegistir((int)kimlik);
+            };
+
+            // Sütunun tıklanabilir olduğu imleçten anlaşılsın
+            dgvOgrenciler.CellMouseEnter += (s, e) =>
+            {
+                bool odemeSutunu = e.RowIndex >= 0 && e.ColumnIndex >= 0
+                    && dgvOgrenciler.Columns[e.ColumnIndex].Name == "colOdeme";
+                dgvOgrenciler.Cursor = odemeSutunu ? Cursors.Hand : Cursors.Default;
+            };
+            dgvOgrenciler.CellMouseLeave += (s, e) => dgvOgrenciler.Cursor = Cursors.Default;
 
             // Alt panel
             panelAlt = new Panel
@@ -234,7 +258,7 @@ namespace RORAMuzikMerkezi
 
             var lblAciklama = new Label
             {
-                Text = "💡 Hafta kutucuklarına tıklayarak ders kaydı yapabilirsiniz",
+                Text = "💡 Hafta kutucuklarına ve ödeme sütununa tıklayarak kayıt yapabilirsiniz",
                 Location = new Point(745, 18),
                 Size = new Size(450, 22),
                 Font = new Font("Segoe UI", 9),
@@ -370,6 +394,20 @@ namespace RORAMuzikMerkezi
             row.Cells["colOdeme"].Style.ForeColor = odeme ? Color.FromArgb(30, 130, 60) : Color.FromArgb(190, 50, 50);
         }
 
+        // Ödeme sütununa tıklanınca durum ters çevrilir. Ders kutucukları da
+        // doğrudan tıklanarak işleniyor; tablodaki iki bilgi artık aynı şekilde
+        // değiştiriliyor. Alttaki düğmeler aynı metotları çağırmaya devam eder.
+        private void OdemeDurumunuDegistir(int ogrenciId)
+        {
+            int secilenAy = cmbAy.SelectedIndex + 1;
+            int secilenYil = cmbYil.SelectedItem != null ? (int)cmbYil.SelectedItem : DateTime.Now.Year;
+
+            if (VeriYoneticisi.OdemeYapildiMi(ogrenciId, secilenYil, secilenAy))
+                OdemeyiGeriAl(ogrenciId);
+            else
+                OdemeAl(ogrenciId);
+        }
+
         private void BtnOdemeYapildi_Click(object sender, EventArgs e)
         {
             if (dgvOgrenciler.SelectedRows.Count == 0)
@@ -378,7 +416,14 @@ namespace RORAMuzikMerkezi
                 return;
             }
 
-            int id = (int)dgvOgrenciler.SelectedRows[0].Cells["colId"].Value;
+            OdemeAl((int)dgvOgrenciler.SelectedRows[0].Cells["colId"].Value);
+        }
+
+        // Ödeme alınırken tutar sorulur; kullanıcı vazgeçerse hiçbir şey
+        // kaydedilmez. İşaretleme ayrıca onay istemez, tutar diyaloğu zaten
+        // bilinçli bir adım.
+        private void OdemeAl(int id)
+        {
             var ogr = VeriYoneticisi.Veriler.Ogrenciler.FirstOrDefault(o => o.Id == id);
             if (ogr == null) return;
 
@@ -417,7 +462,13 @@ namespace RORAMuzikMerkezi
                 return;
             }
 
-            int id = (int)dgvOgrenciler.SelectedRows[0].Cells["colId"].Value;
+            OdemeyiGeriAl((int)dgvOgrenciler.SelectedRows[0].Cells["colId"].Value);
+        }
+
+        // Geri alma onay ister: alınmış bir ödemeyi silmek, işaretlemeye göre
+        // daha yıkıcı ve yanlışlıkla tıklamayla olabilir.
+        private void OdemeyiGeriAl(int id)
+        {
             var ogr = VeriYoneticisi.Veriler.Ogrenciler.FirstOrDefault(o => o.Id == id);
             if (ogr == null) return;
 
