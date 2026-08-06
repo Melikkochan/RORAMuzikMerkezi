@@ -544,5 +544,147 @@ namespace RORAMuzikMerkezi
 
             return sb.ToString();
         }
+
+        // ---- Dönemsel rapor ----
+        //
+        // Aylık rapor tek bir ayın ayrıntısını verir: hangi öğrenci hangi hafta
+        // ders aldı, ödedi mi. Dönemsel rapor bunun yerine toplamlara bakar:
+        // ay ay tahsilat ve çalgı bazında dağılım. İkisi farklı soruları
+        // cevapladığı için aylık rapor olduğu gibi duruyor.
+
+        // Bir ayda ödeme yapan öğrenci sayısı
+        public static int AylikOdeyenSayisi(int yil, int ay)
+        {
+            return Veriler.Ogrenciler.Count(o => OdemeYapildiMi(o.Id, yil, ay));
+        }
+
+        // Bir çalgıdan bir ayda tahsil edilen toplam
+        public static decimal CalgiAylikGelir(string calgi, int yil, int ay)
+        {
+            return Veriler.Ogrenciler
+                .Where(o => o.Calgı == calgi)
+                .Sum(o => OdemeTutari(o.Id, yil, ay));
+        }
+
+        // Bir çalgıdan dönem boyunca tahsil edilen toplam
+        public static decimal CalgiDonemGeliri(string calgi, Donem donem)
+        {
+            decimal toplam = 0m;
+            foreach (var nokta in donem.Aylar())
+                toplam += CalgiAylikGelir(calgi, nokta.Year, nokta.Month);
+            return toplam;
+        }
+
+        // Bir çalgıda dönem boyunca kaç ödeme alındığı (öğrenci × ay adedi).
+        // Tahsilatın kaç işlemden oluştuğunu gösterir; tek bir yüksek ödeme ile
+        // çok sayıda küçük ödeme aynı toplamı verse de aynı şey değildir.
+        public static int CalgiDonemOdemeAdedi(string calgi, Donem donem)
+        {
+            int adet = 0;
+            foreach (var ogrenci in Veriler.Ogrenciler.Where(o => o.Calgı == calgi))
+                foreach (var nokta in donem.Aylar())
+                    if (OdemeYapildiMi(ogrenci.Id, nokta.Year, nokta.Month)) adet++;
+            return adet;
+        }
+
+        public static decimal DonemToplamGelir(Donem donem)
+        {
+            decimal toplam = 0m;
+            foreach (var nokta in donem.Aylar())
+                toplam += AylikToplamGelir(nokta.Year, nokta.Month);
+            return toplam;
+        }
+
+        public static List<string> Calgilar()
+        {
+            return Veriler.Ogrenciler
+                .Select(o => o.Calgı)
+                .Distinct()
+                .OrderBy(c => c, StringComparer.CurrentCulture)
+                .ToList();
+        }
+
+        // Bir tutarın dönem toplamı içindeki payı. Dönem toplamı sıfırken
+        // bölme yapılmaz; hiç tahsilat yokken "%0,0" yazmak da yanıltıcı
+        // olmadığı için o değer dönülür.
+        public static string PayYazi(decimal tutar, decimal toplam)
+        {
+            if (toplam <= 0m) return "—";
+            double oran = (double)(tutar / toplam) * 100.0;
+            return oran.ToString("N1", new System.Globalization.CultureInfo("tr-TR")) + "%";
+        }
+
+        public static string DonemRaporuOlustur(Donem donem)
+        {
+            var sb = new System.Text.StringBuilder();
+            decimal donemToplam = DonemToplamGelir(donem);
+
+            sb.AppendLine("================================================================");
+            sb.AppendLine("   RORA SANAT MERKEZİ");
+            sb.AppendLine($"   {donem.Baslik.ToUpper(new System.Globalization.CultureInfo("tr-TR"))} DÖNEM RAPORU");
+            sb.AppendLine($"   Rapor Tarihi: {DateTime.Now:dd.MM.yyyy HH:mm}");
+            sb.AppendLine("================================================================");
+            sb.AppendLine();
+
+            // ---- Ay ay tahsilat ----
+            sb.AppendLine("--- AY AY TAHSİLAT ---");
+            sb.AppendLine($"{"Ay",-18} {"Ödeme Yapan",12} {"Tahsilat",16} {"Pay",8}");
+            sb.AppendLine(new string('-', 58));
+
+            DateTime enIyiAy = new DateTime(donem.BasYil, donem.BasAy, 1);
+            decimal enIyiTutar = -1m;
+
+            foreach (var nokta in donem.Aylar())
+            {
+                decimal tutar = AylikToplamGelir(nokta.Year, nokta.Month);
+                int odeyen = AylikOdeyenSayisi(nokta.Year, nokta.Month);
+
+                if (tutar > enIyiTutar) { enIyiTutar = tutar; enIyiAy = nokta; }
+
+                sb.AppendLine($"{Donem.AyYil(nokta.Year, nokta.Month),-18} {odeyen,12} {TutarYazi(tutar),16} {PayYazi(tutar, donemToplam),8}");
+            }
+
+            sb.AppendLine(new string('-', 58));
+            sb.AppendLine($"{"TOPLAM",-18} {"",12} {TutarYazi(donemToplam),16} {"",8}");
+            sb.AppendLine();
+
+            // ---- Çalgı bazında ----
+            sb.AppendLine("--- ÇALGI BAZINDA TAHSİLAT ---");
+            sb.AppendLine($"{"Çalgı",-20} {"Öğrenci",8} {"Ödeme",8} {"Tahsilat",16} {"Pay",8}");
+            sb.AppendLine(new string('-', 64));
+
+            var calgilar = Calgilar();
+            if (calgilar.Count == 0)
+            {
+                sb.AppendLine("(kayıtlı öğrenci yok)");
+            }
+            else
+            {
+                foreach (var calgi in calgilar)
+                {
+                    int ogrenciSayisi = Veriler.Ogrenciler.Count(o => o.Calgı == calgi);
+                    int odemeAdedi = CalgiDonemOdemeAdedi(calgi, donem);
+                    decimal tutar = CalgiDonemGeliri(calgi, donem);
+
+                    sb.AppendLine($"{calgi,-20} {ogrenciSayisi,8} {odemeAdedi,8} {TutarYazi(tutar),16} {PayYazi(tutar, donemToplam),8}");
+                }
+            }
+
+            sb.AppendLine(new string('-', 64));
+            sb.AppendLine($"{"TOPLAM",-20} {Veriler.Ogrenciler.Count,8} {"",8} {TutarYazi(donemToplam),16} {"",8}");
+            sb.AppendLine();
+
+            // ---- Özet ----
+            sb.AppendLine("================================================================");
+            sb.AppendLine($"DÖNEM          : {donem.Baslik}  ({donem.AySayisi} ay)");
+            sb.AppendLine($"TOPLAM TAHSİLAT: {TutarYazi(donemToplam)}");
+            sb.AppendLine($"AYLIK ORTALAMA : {TutarYazi(donem.AySayisi > 0 ? donemToplam / donem.AySayisi : 0m)}");
+            if (enIyiTutar > 0m)
+                sb.AppendLine($"EN YÜKSEK AY   : {Donem.AyYil(enIyiAy.Year, enIyiAy.Month)}  ({TutarYazi(enIyiTutar)})");
+            sb.AppendLine($"KAYITLI ÖĞRENCİ: {Veriler.Ogrenciler.Count}");
+            sb.AppendLine("================================================================");
+
+            return sb.ToString();
+        }
     }
 }

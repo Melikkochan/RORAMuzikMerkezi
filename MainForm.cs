@@ -76,9 +76,12 @@ namespace RORAMuzikMerkezi
                 PdfRaporHazirla(gecen.Year, gecen.Month);
             });
             var menuBaskaAy = new ToolStripMenuItem("🗓️ Başka Ay…", null, (s, e) => BaskaAyRaporu());
+            var menuBuYil = new ToolStripMenuItem("📆 Bu Yılın Raporu", null, (s, e) => DonemRaporuHazirla(Donem.Yil(DateTime.Now.Year), false));
+            var menuDonem = new ToolStripMenuItem("📈 Yıllık / Dönem Raporu…", null, (s, e) => DonemRaporu());
             menuRapor.DropDownItems.AddRange(new ToolStripItem[] {
                 menuOzetRapor, menuOncekiAy, new ToolStripSeparator(), menuPdfBuAy, menuPdfOncekiAy,
-                new ToolStripSeparator(), menuBaskaAy });
+                new ToolStripSeparator(), menuBaskaAy,
+                new ToolStripSeparator(), menuBuYil, menuDonem });
 
             var menuHakkinda = new ToolStripMenuItem("ℹ️ Hakkında") { ForeColor = Color.White, Font = new Font("Segoe UI", 10) };
             menuHakkinda.Click += (s, e) => MessageBox.Show(
@@ -430,20 +433,32 @@ namespace RORAMuzikMerkezi
 
         private void OzetRaporHazirla(int yil, int ay)
         {
-            string rapor = VeriYoneticisi.OzetRaporOlustur(yil, ay);
-
             string ayAdi = new DateTime(yil, ay, 1).ToString("MMMM_yyyy", new System.Globalization.CultureInfo("tr-TR"));
+            MetinRaporunuKaydet(VeriYoneticisi.OzetRaporOlustur(yil, ay),
+                                $"RORA_Rapor_{ayAdi}.txt",
+                                $"Özet Rapor - {ay}/{yil}");
+        }
+
+        // Metin raporunu masaüstüne yazar, açmayı önerir. Yazılamazsa sebebini
+        // bildirip raporu bir önizleme penceresinde gösterir: rapor zaten
+        // üretilmiş durumda, kullanıcıyı elindeki çıktıdan mahrum bırakmanın
+        // anlamı yok.
+        //
+        // Aylık ve dönemsel rapor aynı yolu kullanıyor; ikisi arasında kaydetme
+        // davranışı farklılaşmasın diye tek yerde duruyor.
+        private void MetinRaporunuKaydet(string rapor, string dosyaAdi, string onizlemeBasligi)
+        {
             string masaustu = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-            string dosyaAdi = Path.Combine(masaustu, $"RORA_Rapor_{ayAdi}.txt");
+            string dosyaYolu = Path.Combine(masaustu, dosyaAdi);
 
             try
             {
-                File.WriteAllText(dosyaAdi, rapor, System.Text.Encoding.UTF8);
+                File.WriteAllText(dosyaYolu, rapor, System.Text.Encoding.UTF8);
 
-                if (MessageBox.Show($"Rapor masaüstüne kaydedildi:\n{dosyaAdi}\n\nRaporu şimdi açmak ister misiniz?",
+                if (MessageBox.Show($"Rapor masaüstüne kaydedildi:\n{dosyaYolu}\n\nRaporu şimdi açmak ister misiniz?",
                     "Rapor Hazır", MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
                 {
-                    System.Diagnostics.Process.Start("notepad.exe", dosyaAdi);
+                    System.Diagnostics.Process.Start("notepad.exe", dosyaYolu);
                 }
             }
             catch (Exception ex)
@@ -451,12 +466,12 @@ namespace RORAMuzikMerkezi
                 // Dosyaya yazılamazsa sebebini bildir ve önizleme göster
                 string uyari =
                     $"Rapor masaüstüne kaydedilemedi: {ex.Message}" + Environment.NewLine +
-                    $"Denenen konum: {dosyaAdi}" + Environment.NewLine +
+                    $"Denenen konum: {dosyaYolu}" + Environment.NewLine +
                     new string('-', 72) + Environment.NewLine + Environment.NewLine;
 
                 var previewForm = new Form
                 {
-                    Text = $"Özet Rapor - {ay}/{yil} (dosyaya yazılamadı)",
+                    Text = $"{onizlemeBasligi} (dosyaya yazılamadı)",
                     Size = new Size(650, 550),
                     StartPosition = FormStartPosition.CenterParent
                 };
@@ -529,24 +544,37 @@ namespace RORAMuzikMerkezi
         // devam eder; bu ek bir çıktı biçimidir.
         private void PdfRaporHazirla(int yil, int ay)
         {
-            if (!PdfRaporYazici.YaziciKullanilabilirMi())
-            {
-                MessageBox.Show(
-                    $"PDF üretimi için gereken \"{PdfRaporYazici.YaziciAdi}\" yazıcısı bulunamadı." + Environment.NewLine + Environment.NewLine +
-                    "Bu yazıcı Windows 10 ve üzeri sürümlerde standart olarak gelir." + Environment.NewLine +
-                    "Kaldırılmışsa Denetim Masası > Aygıtlar ve Yazıcılar üzerinden yeniden eklenebilir." + Environment.NewLine + Environment.NewLine +
-                    "Metin raporu (.txt) etkilenmez, kullanılabilir durumda.",
-                    "PDF Üretilemiyor", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
+            if (!PdfUretilebilirMi()) return;
 
             string ayAdi = new DateTime(yil, ay, 1).ToString("MMMM_yyyy", new System.Globalization.CultureInfo("tr-TR"));
+            PdfKaydet(new PdfRaporYazici(yil, ay), $"RORA_Rapor_{ayAdi}.pdf");
+        }
 
+        // Yazıcı yoksa sebebini ve çözümünü anlatır. PDF üretimi Windows'un
+        // yerleşik yazıcısına bağlı; kullanıcının bunu bilmesi gerekmiyor ama
+        // eksikse ne yapacağını bilmesi gerekiyor.
+        private bool PdfUretilebilirMi()
+        {
+            if (PdfRapor.YaziciKullanilabilirMi()) return true;
+
+            MessageBox.Show(
+                $"PDF üretimi için gereken \"{PdfRapor.YaziciAdi}\" yazıcısı bulunamadı." + Environment.NewLine + Environment.NewLine +
+                "Bu yazıcı Windows 10 ve üzeri sürümlerde standart olarak gelir." + Environment.NewLine +
+                "Kaldırılmışsa Denetim Masası > Aygıtlar ve Yazıcılar üzerinden yeniden eklenebilir." + Environment.NewLine + Environment.NewLine +
+                "Metin raporu (.txt) etkilenmez, kullanılabilir durumda.",
+                "PDF Üretilemiyor", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return false;
+        }
+
+        // Konum sorar, raporu yazdırır, açmayı önerir. Aylık ve dönemsel rapor
+        // aynı yolu kullanıyor.
+        private void PdfKaydet(PdfRapor yazici, string varsayilanDosyaAdi)
+        {
             using (var sfd = new SaveFileDialog())
             {
                 sfd.Title = "Raporu PDF olarak kaydet";
                 sfd.Filter = "PDF dosyası (*.pdf)|*.pdf";
-                sfd.FileName = $"RORA_Rapor_{ayAdi}.pdf";
+                sfd.FileName = varsayilanDosyaAdi;
                 sfd.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
                 if (sfd.ShowDialog(this) != DialogResult.OK) return;
 
@@ -554,7 +582,7 @@ namespace RORAMuzikMerkezi
                 this.Cursor = Cursors.WaitCursor;
                 try
                 {
-                    new PdfRaporYazici(yil, ay).Yazdir(sfd.FileName);
+                    yazici.Yazdir(sfd.FileName);
                     this.Cursor = eskiImlec;
 
                     if (MessageBox.Show(
@@ -572,6 +600,34 @@ namespace RORAMuzikMerkezi
                         "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
+        }
+
+        // ---- Dönemsel rapor ----
+        //
+        // Aylık rapor tek bir ayın ayrıntısını verir. Yıl sonu değerlendirmesi
+        // ve muhasebe içinse toplamlar gerekiyor; bu ek bir rapor türü, aylık
+        // rapor olduğu gibi duruyor.
+        private void DonemRaporu()
+        {
+            using (var form = new RaporDonemSecimFormu())
+            {
+                if (form.ShowDialog(this) != DialogResult.OK) return;
+                DonemRaporuHazirla(form.SecilenDonem, form.PdfIstendi);
+            }
+        }
+
+        private void DonemRaporuHazirla(Donem donem, bool pdf)
+        {
+            if (pdf)
+            {
+                if (!PdfUretilebilirMi()) return;
+                PdfKaydet(new DonemPdfRaporu(donem), $"RORA_Donem_{donem.DosyaAdiParcasi}.pdf");
+                return;
+            }
+
+            MetinRaporunuKaydet(VeriYoneticisi.DonemRaporuOlustur(donem),
+                                $"RORA_Donem_{donem.DosyaAdiParcasi}.txt",
+                                $"Dönem Raporu - {donem.Baslik}");
         }
 
         // Tüm çalgılardaki öğrenciler arasında arar. Sekme içi aramayla aynı

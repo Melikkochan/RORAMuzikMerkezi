@@ -30,6 +30,7 @@
 - Produce the same report as a PDF, with the centre's logo
 - Report income for the selected month
 - Choose the reported period: current month, previous month, or any month and year
+- Report a whole year or a free month range, showing income month by month and broken down by instrument, as both text and PDF
 
 ### Data storage
 
