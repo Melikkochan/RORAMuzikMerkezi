@@ -49,14 +49,14 @@ namespace RORAMuzikMerkezi
             this.WindowState = FormWindowState.Maximized;
             this.StartPosition = FormStartPosition.CenterScreen;
             this.MinimumSize = new Size(800, 550);
-            this.BackColor = Color.FromArgb(245, 245, 250);
+            this.BackColor = Renkler.Zemin;
 
             // İkon simgesi için form ikonu (bulunamazsa varsayılan ikonla açılır)
             var ikon = Varliklar.Ikon("favicon.ico");
             if (ikon != null) this.Icon = ikon;
 
             // Menu
-            menuStrip = new MenuStrip { BackColor = Color.FromArgb(50, 65, 130), ForeColor = Color.White };
+            menuStrip = new MenuStrip { BackColor = Renkler.Lacivert, ForeColor = Renkler.MetinTers };
             menuStrip.Renderer = new ToolStripProfessionalRenderer(new RoraMenuColors());
 
             var menuOgrenci = new ToolStripMenuItem("👤 Öğrenci") { ForeColor = Color.White, Font = new Font("Segoe UI", 10) };
@@ -102,7 +102,7 @@ namespace RORAMuzikMerkezi
             {
                 Dock = DockStyle.Top,
                 Height = 52,
-                BackColor = Color.FromArgb(70, 90, 160),
+                BackColor = Renkler.Lacivert,
                 Padding = new Padding(10, 8, 10, 8)
             };
 
@@ -112,8 +112,8 @@ namespace RORAMuzikMerkezi
                 Location = new Point(10, 9),
                 Size = new Size(145, 34),
                 Font = new Font("Segoe UI", 9, FontStyle.Bold),
-                BackColor = Color.FromArgb(40, 180, 90),
-                ForeColor = Color.White,
+                BackColor = Renkler.Altin,
+                ForeColor = Renkler.Lacivert,
                 FlatStyle = FlatStyle.Flat,
                 Cursor = Cursors.Hand
             };
@@ -126,8 +126,8 @@ namespace RORAMuzikMerkezi
                 Location = new Point(165, 9),
                 Size = new Size(145, 34),
                 Font = new Font("Segoe UI", 9, FontStyle.Bold),
-                BackColor = Color.FromArgb(40, 130, 210),
-                ForeColor = Color.White,
+                BackColor = Renkler.LacivertOrta,
+                ForeColor = Renkler.MetinTers,
                 FlatStyle = FlatStyle.Flat,
                 Cursor = Cursors.Hand
             };
@@ -140,8 +140,8 @@ namespace RORAMuzikMerkezi
                 Location = new Point(320, 9),
                 Size = new Size(110, 34),
                 Font = new Font("Segoe UI", 9, FontStyle.Bold),
-                BackColor = Color.FromArgb(130, 100, 180),
-                ForeColor = Color.White,
+                BackColor = Renkler.LacivertOrta,
+                ForeColor = Renkler.MetinTers,
                 FlatStyle = FlatStyle.Flat,
                 Cursor = Cursors.Hand
             };
@@ -187,7 +187,7 @@ namespace RORAMuzikMerkezi
                 BorderStyle = BorderStyle.FixedSingle,
                 Width = 420,
                 Height = 160,
-                BackColor = Color.FromArgb(255, 255, 245)
+                BackColor = Renkler.Yuzey
             };
             lstAramaSonuclari.MouseClick += (s, e) => SecilenSonucaGit();
             lstAramaSonuclari.KeyDown += LstAramaSonuclari_KeyDown;
@@ -280,8 +280,8 @@ namespace RORAMuzikMerkezi
             var lblBaslik = new Label
             {
                 Text = "RORA Sanat Merkezi - Genel Durum",
-                Font = new Font("Segoe UI", 16, FontStyle.Bold),
-                ForeColor = Color.FromArgb(50, 60, 140),
+                Font = Yazilar.Baslik,
+                ForeColor = Renkler.Lacivert,
                 Location = new Point(20, 20),
                 Size = new Size(500, 40),
                 AutoSize = false
@@ -290,8 +290,8 @@ namespace RORAMuzikMerkezi
             var lblTarih = new Label
             {
                 Text = $"📅 {DateTime.Now:dd MMMM yyyy, dddd}",
-                Font = new Font("Segoe UI", 11),
-                ForeColor = Color.FromArgb(100, 100, 140),
+                Font = Yazilar.Govde,
+                ForeColor = Renkler.MetinSolgun,
                 Location = new Point(20, 65),
                 Size = new Size(400, 28)
             };
@@ -303,64 +303,84 @@ namespace RORAMuzikMerkezi
             int buHaftaDers = VeriYoneticisi.Veriler.Ogrenciler.Count(o =>
                 VeriYoneticisi.BuHaftaDersAldiMi(o.Id));
 
+            // Üç kutu eskiden aynı görsel ağırlıktaydı; hepsi birden bağırınca
+            // hangisinin önemli olduğu anlaşılmıyordu. Toplam öğrenci sayısı
+            // asıl bağlam olduğu için dolu, diğer ikisi ise beyaz zeminde
+            // renkli bir şeritle veriliyor.
             var kutular = new[]
             {
-                ("👥", "Toplam Öğrenci", toplamOgrenci.ToString(), Color.FromArgb(60, 100, 200)),
-                ("💰", "Bu Ay Ödeme Yapan", $"{odeyenler}/{toplamOgrenci}", Color.FromArgb(40, 160, 80)),
-                ("📚", "Bu Hafta Ders Alan", $"{buHaftaDers}/{toplamOgrenci}", Color.FromArgb(180, 100, 40)),
+                ("👥", "Toplam Öğrenci", toplamOgrenci.ToString(), Renkler.Lacivert, true),
+                ("💰", "Bu Ay Ödeme Yapan", $"{odeyenler}/{toplamOgrenci}", Renkler.Olumlu, false),
+                ("📚", "Bu Hafta Ders Alan", $"{buHaftaDers}/{toplamOgrenci}", Renkler.Altin, false),
             };
 
             int xPos = 20;
-            foreach (var (ikon, baslik, deger, renk) in kutular)
+            foreach (var (ikon, baslik, deger, renk, dolu) in kutular)
             {
                 var kutu = new Panel
                 {
                     Location = new Point(xPos, 105),
-                    Size = new Size(180, 110),
-                    BackColor = renk,
+                    Size = new Size(190, 120),
+                    BackColor = dolu ? renk : Renkler.Yuzey,
                     BorderStyle = BorderStyle.None
                 };
+
+                if (!dolu)
+                {
+                    // Soldaki renkli şerit: kutuyu boyamadan konuyu belli eder
+                    kutu.Controls.Add(new Panel
+                    {
+                        BackColor = renk,
+                        Location = new Point(0, 0),
+                        Size = new Size(4, 120)
+                    });
+                    kutu.Paint += (s, e) => ControlPaint.DrawBorder(
+                        e.Graphics, ((Control)s).ClientRectangle, Renkler.Cizgi, ButtonBorderStyle.Solid);
+                }
 
                 kutu.Controls.Add(new Label
                 {
                     Text = ikon,
-                    Font = new Font("Segoe UI", 22),
-                    ForeColor = Color.White,
-                    Location = new Point(10, 8),
-                    Size = new Size(50, 40),
-                    TextAlign = ContentAlignment.MiddleCenter
+                    Font = new Font("Segoe UI", 18),
+                    ForeColor = dolu ? Renkler.MetinTers : renk,
+                    Location = new Point(14, 8),
+                    Size = new Size(40, 36),
+                    TextAlign = ContentAlignment.MiddleLeft
                 });
 
                 kutu.Controls.Add(new Label
                 {
                     Text = deger,
-                    Font = new Font("Segoe UI", 22, FontStyle.Bold),
-                    ForeColor = Color.White,
-                    Location = new Point(65, 8),
-                    Size = new Size(105, 40),
-                    TextAlign = ContentAlignment.MiddleCenter
+                    Font = Yazilar.Sayi,
+                    ForeColor = dolu ? Renkler.MetinTers : Renkler.Metin,
+                    // Yükseklikler yazının ölçülen boyuna göre veriliyor.
+                    // Daha dar verilirse sayının altı sessizce kesiliyor;
+                    // yerleşim testi bunu ölçerek denetliyor.
+                    Location = new Point(12, 44),
+                    Size = new Size(166, 48),
+                    TextAlign = ContentAlignment.MiddleLeft
                 });
 
                 kutu.Controls.Add(new Label
                 {
                     Text = baslik,
-                    Font = new Font("Segoe UI", 9),
-                    ForeColor = Color.FromArgb(220, 220, 255),
-                    Location = new Point(5, 58),
-                    Size = new Size(170, 25),
-                    TextAlign = ContentAlignment.MiddleCenter
+                    Font = Yazilar.Kucuk,
+                    ForeColor = dolu ? Color.FromArgb(205, 212, 235) : Renkler.MetinSolgun,
+                    Location = new Point(14, 94),
+                    Size = new Size(170, 20),
+                    TextAlign = ContentAlignment.MiddleLeft
                 });
 
                 panel.Controls.Add(kutu);
-                xPos += 200;
+                xPos += 210;
             }
 
             // Kısa öğrenci listesi
             var lblKisaListe = new Label
             {
                 Text = "Bu ay ödeme yapmayan öğrenciler:",
-                Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                ForeColor = Color.FromArgb(180, 50, 50),
+                Font = Yazilar.GovdeKalin,
+                ForeColor = Renkler.Metin,
                 Location = new Point(20, 235),
                 Size = new Size(400, 25)
             };
@@ -368,10 +388,11 @@ namespace RORAMuzikMerkezi
             var lstOdemeyenler = new ListBox
             {
                 Location = new Point(20, 265),
-                Size = new Size(550, 200),
-                Font = new Font("Segoe UI", 10),
+                Size = new Size(600, 200),
+                Font = Yazilar.Govde,
                 BorderStyle = BorderStyle.FixedSingle,
-                BackColor = Color.FromArgb(255, 250, 250)
+                BackColor = Renkler.Yuzey,
+                ForeColor = Renkler.Metin
             };
 
             var odemeyenler = VeriYoneticisi.Veriler.Ogrenciler

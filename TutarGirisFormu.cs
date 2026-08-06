@@ -28,13 +28,13 @@ namespace RORAMuzikMerkezi
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
-            this.BackColor = Color.FromArgb(245, 245, 250);
+            this.BackColor = Renkler.Zemin;
 
             var lblBaslik = new Label
             {
                 Text = "💰 Ödeme Tutarı",
                 Font = new Font("Segoe UI", 13, FontStyle.Bold),
-                ForeColor = Color.FromArgb(60, 60, 120),
+                ForeColor = Renkler.Lacivert,
                 Location = new Point(15, 15),
                 Size = new Size(360, 30)
             };
@@ -43,7 +43,7 @@ namespace RORAMuzikMerkezi
             {
                 Text = $"{ogrenciAdi} — {ayAdi}",
                 Font = new Font("Segoe UI", 10),
-                ForeColor = Color.FromArgb(90, 90, 120),
+                ForeColor = Renkler.MetinSolgun,
                 Location = new Point(15, 48),
                 Size = new Size(360, 24)
             };
@@ -69,7 +69,7 @@ namespace RORAMuzikMerkezi
             {
                 Text = "Boş bırakılırsa 0 kaydedilir.",
                 Font = new Font("Segoe UI", 8),
-                ForeColor = Color.FromArgb(120, 120, 140),
+                ForeColor = Renkler.MetinSolgun,
                 Location = new Point(100, 115),
                 Size = new Size(260, 20)
             };
@@ -80,7 +80,7 @@ namespace RORAMuzikMerkezi
                 Location = new Point(100, 140),
                 Size = new Size(120, 32),
                 Font = new Font("Segoe UI", 9, FontStyle.Bold),
-                BackColor = Color.FromArgb(50, 150, 80),
+                BackColor = Renkler.Lacivert,
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat
             };
@@ -93,8 +93,8 @@ namespace RORAMuzikMerkezi
                 Location = new Point(230, 140),
                 Size = new Size(120, 32),
                 Font = new Font("Segoe UI", 9),
-                BackColor = Color.FromArgb(200, 70, 70),
-                ForeColor = Color.White,
+                BackColor = Renkler.Yuzey,
+                ForeColor = Renkler.MetinSolgun,
                 FlatStyle = FlatStyle.Flat,
                 DialogResult = DialogResult.Cancel
             };
