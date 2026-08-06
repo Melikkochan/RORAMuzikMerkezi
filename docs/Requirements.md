@@ -50,6 +50,7 @@
 - Low hardware requirements
 - Windows compatibility
 - Readable on scaled displays: high-DPI aware, and control sizes derived from the text they hold rather than fixed pixels
+- Layout follows the window: the summary tab keeps its content centred as the window is resized, and falls back to left alignment when the window is too narrow to centre it
 - No server, database or internet connection
 - No external libraries; only standard .NET Framework assemblies
 
