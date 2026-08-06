@@ -53,15 +53,9 @@ Documentation, repository hygiene, CI, and interface work.
 - Fixed: a corrupt data file was silently replaced with an empty one (#12)
 - README cleaned up and screenshots moved into the repository (#13)
 - Documentation corrected to match the actual repository setup (#21)
-
-### In review
-
-- Payment state toggled by clicking the table cell (#30, `!23`)
-- High-DPI support, so text is not blurred on scaled displays (#31, `!24`)
-- Refreshed visual language of the interface (#32, `!25`)
-
-### In progress
-
+- Payment state toggled by clicking the table cell (#30)
+- High-DPI support, so text is not blurred on scaled displays (#31)
+- Refreshed visual language of the interface (#32)
 - Documentation brought back in line with the code after 29 commits (#35)
 - Milestone records reconciled with the work actually delivered (#37)
 
@@ -69,8 +63,10 @@ Documentation, repository hygiene, CI, and interface work.
 
 - Yearly and date-range reports (#33)
 - Per-student payment and lesson history screen (#34)
-- README screenshots to be retaken once `!25` merges (#36)
+- README screenshots to be retaken now that the interface has been refreshed, along with the README lines for #30 and #31 (#36)
 
-### Blocked
+### Deferred
 
-- CI pipeline is written and validated but cannot run yet: GitLab.com requires account verification before free-tier projects may use shared runners (#14)
+- **CI build pipeline (#14).** `.gitlab-ci.yml` is written but has never run, so we do not know that it passes. Deferred deliberately rather than blocked: its only job is to answer "does this commit compile", the project has no test suite, and compile errors already surface immediately in Visual Studio. The one risk it genuinely covers — a repository that builds locally but not from a clean clone, which happened once in this project — is covered almost as well by cloning to a temporary folder and building before a release.
+
+  If it is taken up, the local Windows runner option is preferred over GitLab's shared runners: no account verification, no monthly minute limit, and it builds with real MSBuild and .NET Framework instead of Mono, whose result is only an approximation for a Windows Forms project. The current `.gitlab-ci.yml` assumes a shared Linux runner and would need rewriting for that.
