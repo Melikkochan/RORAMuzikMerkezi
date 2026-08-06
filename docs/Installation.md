@@ -118,27 +118,41 @@ The runner for this project is already registered and lives in `C:\Users\MELİK\
    gitlab-runner register --non-interactive --url https://gitlab.com/ --token <glrt-token> --executor shell --shell powershell
    ```
 
-4. Run it. Either in the foreground for a one-off check:
+4. Run it:
 
    ```
    gitlab-runner run --working-directory C:\Users\MELİK\gitlab-runner
    ```
 
-   or, so that it survives a reboot, as a Windows service from an **administrator** shell:
+### Keeping the runner running
 
-   ```
-   gitlab-runner install --working-directory C:\Users\MELİK\gitlab-runner
-   gitlab-runner start
-   ```
+A shortcut in the Startup folder starts the runner minimised at every logon:
 
-   Installing the service needs administrator rights; running it in the foreground does not.
+```
+%AppData%\Microsoft\Windows\Start Menu\Programs\Startup\GitLab Runner (RORA).lnk
+```
+
+Deleting that shortcut is all it takes to stop the runner from starting. This route needs no administrator rights, and the runner only runs while you are logged in — which is what a single-developer project needs.
+
+If you would rather have it run as a proper Windows service, independent of who is logged in, do this once from an **administrator** shell instead:
+
+```
+gitlab-runner install --working-directory C:\Users\MELİK\gitlab-runner
+gitlab-runner start
+```
+
+and remove the Startup shortcut so the runner is not started twice.
 
 Visual Studio (or the Build Tools) with the **MSBuild** component and the **.NET Framework 4.7.2 Developer Pack** must be installed on that machine. The job locates MSBuild through `vswhere` rather than a hard-coded path, so it keeps working when Visual Studio is updated or installed elsewhere.
 
-### When the runner is not running
+### Merge requests require a green pipeline
 
-Pipelines stay pending — no runner picks the job up. Nothing breaks, but nothing is verified either.
+**Settings → Merge requests → Pipelines must succeed** is on. A merge request cannot be merged until its pipeline passes, which is the point of having the pipeline at all.
 
-For that reason **Settings → Merge requests → Pipelines must succeed** is deliberately left off. Turning it on while the runner only runs by hand would block every merge request whenever the machine is off. Turn it on once the runner is installed as a service.
+The catch: the runner lives on one machine. If that machine is off, or you are not logged in, pipelines sit in **pending** and merge requests cannot be merged. If that happens, either start the runner or turn the setting off:
 
-The manual equivalent is worth knowing regardless: clone the repository into an empty folder and build it there. That is the one failure this pipeline actually guards against — a repository that builds on your machine but not from a clean clone.
+```
+PUT /projects/:id  {"only_allow_merge_if_pipeline_succeeds": false}
+```
+
+The manual equivalent of the pipeline is worth knowing regardless: clone the repository into an empty folder and build it there. That is the one failure this pipeline actually guards against — a repository that builds on your machine but not from a clean clone.
