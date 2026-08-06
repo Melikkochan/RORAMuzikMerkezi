@@ -21,6 +21,7 @@ Single-process desktop application. No server, no database, no network calls.
 | `MainForm.cs` | Main window: menu bar, global search, summary panel, instrument tabs |
 | `CalgiSekmesi.cs` | One instrument tab: student list, weekly lesson checkboxes, payment state |
 | `OgrenciKayitForm.cs` | Student registration and editing dialog |
+| `OgrenciGecmisFormu.cs` | One student's month-by-month lesson and payment history (read only) |
 | `UcretTanimFormu.cs` | Per-instrument lesson fee definitions |
 | `TutarGirisFormu.cs` | Payment amount entry |
 | `RaporAySecimFormu.cs` | Month and year picker for the monthly report |

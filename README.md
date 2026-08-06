@@ -14,6 +14,7 @@ RORA Sanat Merkezi için geliştirilen bu uygulama; öğrenci kayıt, haftalık 
 - Telefon biçimi doğrulaması ve mükerrer kayıt uyarısı
 - Çalgı türüne göre sekmeli arayüz
 - Sekme içinde öğrenci arama, tüm çalgılarda birden genel arama
+- Öğrenci geçmişi ekranı: ay ay ders ve ödeme dökümü, toplam tahsilat, ödemesi eksik aylar ayrı renkte
 
 **Ders ve ödeme takibi**
 
@@ -115,6 +116,7 @@ This application was developed for RORA Art Center to digitally manage student r
 - Phone number format validation and duplicate registration warning
 - Tabbed interface organized by instrument type
 - Per-tab student search, plus a global search across all instruments
+- Student history screen: lessons and payments month by month, total collected, and unpaid months highlighted
 
 **Lesson and payment tracking**
 

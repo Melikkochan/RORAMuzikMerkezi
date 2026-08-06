@@ -59,10 +59,10 @@ Documentation, repository hygiene, CI, and interface work.
 - Documentation brought back in line with the code after 29 commits (#35)
 - Milestone records reconciled with the work actually delivered (#37)
 - Yearly and date-range reports, month by month and by instrument (#33)
+- Per-student lesson and payment history screen (#34)
 
 ### Open
 
-- Per-student payment and lesson history screen (#34)
 - README screenshots to be retaken now that the interface has been refreshed, along with the README lines for #30 and #31 (#36)
 
 ### Deferred
