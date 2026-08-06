@@ -60,6 +60,7 @@ Documentation, repository hygiene, CI, and interface work.
 - Milestone records reconciled with the work actually delivered (#37)
 - Yearly and date-range reports, month by month and by instrument (#33)
 - Per-student lesson and payment history screen (#34)
+- Fixed: bottom panel buttons were sized in fixed pixels and clipped their labels; widths are now measured from the text at runtime (#38)
 
 ### Open
 

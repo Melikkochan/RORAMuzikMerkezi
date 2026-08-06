@@ -10,7 +10,8 @@ namespace RORAMuzikMerkezi
     {
         private string calgiAdi;
         private DataGridView dgvOgrenciler;
-        private Button btnOdemeYapildi, btnOgrenciSil, btnDuzenle, btnGecmis;
+        private Button btnOdemeYapildi, btnOdemeIptal, btnOgrenciSil, btnDuzenle, btnGecmis;
+        private Label lblAciklama;
 
         // Öğrencinin çalgısı değişince ana pencerenin sekmeleri yenilemesi gerekir
         public event EventHandler OgrenciGuncellendi;
@@ -232,15 +233,12 @@ namespace RORAMuzikMerkezi
                 BackColor = Renkler.Zemin
             };
 
-            // Alt paneldeki beş düğme, pencerenin en dar hâlinde (800 piksel)
-            // de tamamen görünmeli. Genişlikler metin ölçüsüne göre seçildi;
-            // en geniş metin 137 piksel, en dar düğme 110. Sağdaki ipucu
-            // etiketi dekoratif olduğu için taşabilir, düğmeler taşamaz.
+            // Alt paneldeki düğmelerin konum ve genişlikleri burada verilmiyor;
+            // DugmeleriYerlestir çalışma anında her düğmeyi kendi metninden
+            // ölçüp soldan sağa diziyor. Gerekçe DugmeleriYerlestir'de.
             btnOdemeYapildi = new Button
             {
                 Text = "💰 Bu Ay Ödeme Yapıldı",
-                Location = new Point(10, 10),
-                Size = new Size(180, 38),
                 Font = new Font("Segoe UI", 9, FontStyle.Bold),
                 BackColor = Renkler.Lacivert,
                 ForeColor = Renkler.MetinTers,
@@ -253,8 +251,6 @@ namespace RORAMuzikMerkezi
             btnDuzenle = new Button
             {
                 Text = "✏️ Düzenle",
-                Location = new Point(361, 10),
-                Size = new Size(110, 38),
                 Font = new Font("Segoe UI", 9, FontStyle.Bold),
                 BackColor = Renkler.Yuzey,
                 ForeColor = Renkler.Lacivert,
@@ -268,8 +264,6 @@ namespace RORAMuzikMerkezi
             btnGecmis = new Button
             {
                 Text = "📜 Geçmiş",
-                Location = new Point(479, 10),
-                Size = new Size(110, 38),
                 Font = new Font("Segoe UI", 9, FontStyle.Bold),
                 BackColor = Renkler.Yuzey,
                 ForeColor = Renkler.Lacivert,
@@ -283,8 +277,6 @@ namespace RORAMuzikMerkezi
             btnOgrenciSil = new Button
             {
                 Text = "🗑️ Öğrenci Sil",
-                Location = new Point(597, 10),
-                Size = new Size(125, 38),
                 Font = new Font("Segoe UI", 9, FontStyle.Bold),
                 BackColor = Renkler.Yuzey,
                 ForeColor = Renkler.Olumsuz,
@@ -295,19 +287,16 @@ namespace RORAMuzikMerkezi
             btnOgrenciSil.FlatAppearance.BorderColor = Renkler.Cizgi;
             btnOgrenciSil.Click += BtnOgrenciSil_Click;
 
-            var lblAciklama = new Label
+            lblAciklama = new Label
             {
                 Text = "💡 Hafta kutucuklarına ve ödeme sütununa tıklayarak kayıt yapabilirsiniz",
-                Location = new Point(736, 18),
-                Size = new Size(450, 22),
+                AutoSize = true,
                 Font = Yazilar.Kucuk,
                 ForeColor = Renkler.MetinSolgun
             };
-            var btnOdemeIptal = new Button
+            btnOdemeIptal = new Button
             {
                 Text = "❌ Ödeme Yapılmadı",
-                Location = new Point(198, 10),
-                Size = new Size(155, 38),
                 Font = new Font("Segoe UI", 9, FontStyle.Bold),
                 BackColor = Renkler.Yuzey,
                 ForeColor = Renkler.Olumsuz,
@@ -343,6 +332,76 @@ namespace RORAMuzikMerkezi
         {
             base.OnHandleCreated(e);
             TabloOlculeriniAyarla();
+            DugmeleriYerlestir();
+        }
+
+        // Pencere daralınca ipucu etiketinin görünürlüğü değişebilir.
+        protected override void OnSizeChanged(EventArgs e)
+        {
+            base.OnSizeChanged(e);
+            DugmeleriYerlestir();
+        }
+
+        // Ekran ölçeği değişince (pencere farklı DPI'lı bir monitöre taşınınca)
+        // yazı tipi yeniden ölçekleniyor; düğme genişlikleri de yeniden
+        // hesaplanmalı.
+        protected override void OnDpiChangedAfterParent(EventArgs e)
+        {
+            base.OnDpiChangedAfterParent(e);
+            TabloOlculeriniAyarla();
+            DugmeleriYerlestir();
+        }
+
+        // Alt paneldeki düğmeleri soldan sağa dizer.
+        //
+        // Genişlikler sabit piksel olarak yazılmıyor, her düğme kendi metninden
+        // ölçülüyor. Sabit değerler iki yerde kırılıyordu: düğme metni
+        // değiştiğinde ve ölçekli ekranda. İkincisinin sebebi, metindeki emoji
+        // karakterlerinin Segoe UI'da değil yedek bir yazı tipinde (Segoe UI
+        // Emoji) bulunması; o yazı tipi ölçekle birlikte düğmeyle aynı oranda
+        // büyümeyince metin düğmeden taşıyor.
+        //
+        // Ölçüm TextRenderer.MeasureText ile yapılıyor, Button.GetPreferredSize
+        // ile değil. GetPreferredSize, boyutu daha önce atanmış bir düğmede
+        // mevcut genişliği döndürüyor; bu yordam her yeniden yerleşimde
+        // çağrıldığı için düğmeler kendi genişliklerinin üstüne büyümeye devam
+        // ediyordu. MeasureText yalnızca metne bakar, kaç kez çağrılırsa
+        // çağrılsın aynı sonucu verir.
+        //
+        // Metin genişliğine düğme iç boşluğu ve nefes payı ekleniyor. En dar
+        // düğme için bir alt sınır var; kısa metinli düğmeler diğerlerinin
+        // yanında iğne gibi durmasın.
+        private void DugmeleriYerlestir()
+        {
+            if (panelAlt == null || btnOdemeYapildi == null) return;
+
+            var dugmeler = new[] { btnOdemeYapildi, btnOdemeIptal, btnDuzenle, btnGecmis, btnOgrenciSil };
+
+            int kenar = Olcek.Piksel(this, 10);
+            int aralik = Olcek.Piksel(this, 8);
+            int icBosluk = Olcek.Piksel(this, 30);
+            int enAzGenislik = Olcek.Piksel(this, 90);
+            int yukseklik = Olcek.Piksel(this, 38);
+            int ust = Olcek.Piksel(this, 10);
+
+            int x = kenar;
+            foreach (var dugme in dugmeler)
+            {
+                if (dugme == null) continue;
+
+                int metin = TextRenderer.MeasureText(dugme.Text, dugme.Font).Width;
+                int genislik = Math.Max(enAzGenislik, metin + icBosluk);
+                dugme.Location = new Point(x, ust);
+                dugme.Size = new Size(genislik, yukseklik);
+                x += genislik + aralik;
+            }
+
+            // İpucu etiketi dekoratif; düğmelerin sağında yer kalmadıysa
+            // gizleniyor. Düğmeler işlevsel, onlar her koşulda görünür kalmalı.
+            if (lblAciklama == null) return;
+
+            lblAciklama.Location = new Point(x + aralik, ust + Olcek.Piksel(this, 8));
+            lblAciklama.Visible = lblAciklama.Right <= panelAlt.ClientSize.Width - kenar;
         }
 
         private void TabloOlculeriniAyarla()
