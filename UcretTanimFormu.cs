@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
@@ -27,6 +27,11 @@ namespace RORAMuzikMerkezi
 
         private void InitializeComponent()
         {
+            // Yerleşim 96 DPI'a göre yazıldı; ölçekli ekranlarda
+            // konum ve boyutları WinForms bu ayarla kendisi büyütür.
+            this.AutoScaleDimensions = new System.Drawing.SizeF(Olcek.TasarimDpi, Olcek.TasarimDpi);
+            this.AutoScaleMode = AutoScaleMode.Dpi;
+
             this.Text = "Çalgı Ücret Tanımları";
             this.Size = new Size(460, 560);
             this.StartPosition = FormStartPosition.CenterParent;

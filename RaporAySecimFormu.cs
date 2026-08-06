@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
@@ -21,6 +21,11 @@ namespace RORAMuzikMerkezi
 
         public RaporAySecimFormu()
         {
+            // Yerleşim 96 DPI'a göre yazıldı; ölçekli ekranlarda
+            // konum ve boyutları WinForms bu ayarla kendisi büyütür.
+            this.AutoScaleDimensions = new System.Drawing.SizeF(Olcek.TasarimDpi, Olcek.TasarimDpi);
+            this.AutoScaleMode = AutoScaleMode.Dpi;
+
             this.Text = "Rapor Ayı";
             this.Size = new Size(400, 235);
             this.StartPosition = FormStartPosition.CenterParent;
