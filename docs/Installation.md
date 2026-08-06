@@ -38,7 +38,7 @@ No installer is required. Copy `RORAMuzikMerkezi.exe` together with all three im
 
 | File | Used for |
 |---|---|
-| `favicon.ico` | Window and taskbar icon |
+| `favicon.ico` | Window and taskbar icon — the RORA medallion, generated from `rora.jpeg` |
 | `rora1.png` | Splash screen logo |
 | `rora.jpeg` | Logo in the PDF report (falls back to `rora1.png` if missing) |
 

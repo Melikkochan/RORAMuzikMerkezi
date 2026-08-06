@@ -62,13 +62,15 @@ Documentation, repository hygiene, CI, and interface work.
 - Per-student lesson and payment history screen (#34)
 - Fixed: bottom panel buttons were sized in fixed pixels and clipped their labels; widths are now measured from the text at runtime (#38)
 - README screenshots retaken against the refreshed interface, and the missing README lines for #30 and #31 added (#36)
+- CI build pipeline running on a self-hosted Windows runner (#14)
+- Application icon replaced with the RORA medallion; it used to show "MK" (#39)
 
 ### Open
 
 _Nothing open in this sprint._
 
-### Deferred
+### Note on the CI pipeline
 
-- **CI build pipeline (#14).** `.gitlab-ci.yml` is written but has never run, so we do not know that it passes. Deferred deliberately rather than blocked: its only job is to answer "does this commit compile", the project has no test suite, and compile errors already surface immediately in Visual Studio. The one risk it genuinely covers — a repository that builds locally but not from a clean clone, which happened once in this project — is covered almost as well by cloning to a temporary folder and building before a release.
+It ran for the first time in this sprint, and the reason it had never run before turned out not to be the missing runner. On GitLab.com's free plan an unverified account cannot run CI jobs, and the refusal happens when the pipeline is **created**, before any runner is chosen — so a self-hosted runner does not help by itself. Turning shared runners off for the project lifts the requirement. Details in [Installation.md](Installation.md), *Continuous Integration*.
 
-  If it is taken up, the local Windows runner option is preferred over GitLab's shared runners: no account verification, no monthly minute limit, and it builds with real MSBuild and .NET Framework instead of Mono, whose result is only an approximation for a Windows Forms project. The current `.gitlab-ci.yml` assumes a shared Linux runner and would need rewriting for that.
+What the pipeline actually verifies is narrow: that the repository compiles from a clean checkout. There is no test suite, so a green pipeline says nothing about behaviour.
