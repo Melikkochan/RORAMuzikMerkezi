@@ -20,7 +20,7 @@
 
 ### Payment management
 
-- Record and revert a monthly payment
+- Record and revert a monthly payment, either from the buttons or by clicking the payment cell
 - Store the amount paid, not only whether payment happened
 - Define a default lesson fee per instrument, prefilled when recording a payment
 - Remind the user of unpaid students after the 15th of the month
@@ -49,6 +49,7 @@
 - Local data storage
 - Low hardware requirements
 - Windows compatibility
+- Readable on scaled displays: high-DPI aware, and control sizes derived from the text they hold rather than fixed pixels
 - No server, database or internet connection
 - No external libraries; only standard .NET Framework assemblies
 

@@ -27,11 +27,11 @@ namespace RORAMuzikMerkezi
         private Button btnYenile;
         private readonly List<Ogrenci> aramaSonuclari = new List<Ogrenci>();
 
+        // Veri yükleme, yedekleme ve aylık ödeme kayıtlarının oluşturulması
+        // burada değil, Program.Main'de yapılıyor. Yapıcı yalnızca pencereyi
+        // kuruyor; bellekteki veriyi olduğu gibi gösteriyor.
         public MainForm()
         {
-            VeriYoneticisi.Yukle();
-            VeriYoneticisi.OtomatikYedekAl();
-            VeriYoneticisi.AylikOdemeKayitlariniOlustur();
             InitializeComponent();
             SekmeleriBuild();
             OdemeHatirlatici();

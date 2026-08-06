@@ -20,9 +20,15 @@ RORA Sanat Merkezi için geliştirilen bu uygulama; öğrenci kayıt, haftalık 
 
 - 4 haftalık ders takibi (işaret kutusu ile)
 - Aylık ödeme yönetimi (ödeme alma ve geri alma)
+- Ödeme durumu tabloda hücreye tıklanarak değiştirilebilir
 - Ödeme tutarı takibi ve gelir raporlaması
 - Çalgı bazlı ders ücreti tanımları; ödeme alınırken tutar varsayılan olarak gelir
 - Ayın 15'inden sonra çalışan ödeme hatırlatıcısı
+
+**Arayüz**
+
+- Yüksek DPI desteği: %125 ve %150 ölçekli ekranlarda yazılar bulanıklaşmaz
+- Düğme genişlikleri metinden hesaplanır; farklı ölçeklerde yazılar kesilmez
 
 **Raporlama**
 
@@ -45,13 +51,15 @@ RORA Sanat Merkezi için geliştirilen bu uygulama; öğrenci kayıt, haftalık 
 
 ![Genel Özet ekranı](docs/img/genel-ozet.png)
 
-**Çalgı sekmesi** — ay/yıl filtresi, haftalık ders kutucukları ve ödeme durumu
+**Çalgı sekmesi** — ay/yıl filtresi, haftalık ders kutucukları ve tıklanarak değiştirilebilen ödeme sütunu
 
 ![Çalgı sekmesi](docs/img/calgi-sekmesi.png)
 
-**Ödeme alma** — seçili öğrenci için seçili aya ödeme işleme
+**Ödeme alma** — seçili öğrenci için seçili aya ödeme işleme; tutar, çalgının tanımlı ücretinden geliyor
 
 ![Ödeme alma](docs/img/odeme-alma.png)
+
+> Ekran görüntülerindeki öğrenci adları ve telefon numaraları örnektir; gerçek kayıtlara ait değildir.
 
 ## 🛠️ Kullanılan Teknolojiler
 
@@ -122,9 +130,15 @@ This application was developed for RORA Art Center to digitally manage student r
 
 - Weekly lesson tracking with checkboxes (4 weeks per month)
 - Monthly payment management (record and revert payments)
+- Payment state can be toggled by clicking the cell in the table
 - Payment amount tracking and income reporting
 - Per-instrument lesson fee definitions, prefilled when recording a payment
 - Payment reminder shown after the 15th of the month
+
+**Interface**
+
+- High-DPI support: text stays sharp on displays scaled to 125% or 150%
+- Button widths are measured from their text, so labels are not clipped at any scale
 
 **Reporting**
 
