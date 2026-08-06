@@ -28,6 +28,7 @@ RORA Sanat Merkezi için geliştirilen bu uygulama; öğrenci kayıt, haftalık 
 - Aylık özet raporu, masaüstüne `.txt` olarak
 - Aynı raporun logolu PDF çıktısı
 - Bu ay, önceki ay veya seçilen herhangi bir ay/yıl için rapor
+- Yıllık ve serbest tarih aralığı raporu (ör. Eylül–Haziran öğretim yılı): ay ay tahsilat ve çalgı bazında dağılım, metin ve PDF olarak
 
 **Veri güvenliği**
 
@@ -128,6 +129,7 @@ This application was developed for RORA Art Center to digitally manage student r
 - Monthly summary report saved as `.txt` to the desktop
 - The same report as a PDF with the centre's logo
 - Reports for the current month, the previous month, or any chosen month and year
+- Yearly and free date-range reports (e.g. a September–June school year): month-by-month income and a breakdown by instrument, as text and PDF
 
 **Data safety**
 

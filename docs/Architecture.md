@@ -23,7 +23,8 @@ Single-process desktop application. No server, no database, no network calls.
 | `OgrenciKayitForm.cs` | Student registration and editing dialog |
 | `UcretTanimFormu.cs` | Per-instrument lesson fee definitions |
 | `TutarGirisFormu.cs` | Payment amount entry |
-| `RaporAySecimFormu.cs` | Month and year picker for reports |
+| `RaporAySecimFormu.cs` | Month and year picker for the monthly report |
+| `RaporDonemSecimFormu.cs` | Year or free month-range picker for the period report |
 
 ### Shared presentation helpers
 
@@ -39,8 +40,11 @@ Single-process desktop application. No server, no database, no network calls.
 | File | Role |
 |---|---|
 | `Models.cs` | Student, payment and related records |
-| `VeriYoneticisi.cs` | Loading, atomic saving, backup and restore, summary and income calculations |
-| `PdfRaporYazici.cs` | Renders the monthly report to PDF via `System.Drawing.Printing` |
+| `Donem.cs` | A closed month range; a yearly report is just January–December of that year |
+| `VeriYoneticisi.cs` | Loading, atomic saving, backup and restore, summary and income calculations, text reports |
+| `PdfRapor.cs` | Shared PDF chrome: printer setup, logo, page header and footer, pagination |
+| `PdfRaporYazici.cs` | Monthly report layout |
+| `DonemPdfRaporu.cs` | Period report layout: income month by month and by instrument |
 
 ## Data Flow
 

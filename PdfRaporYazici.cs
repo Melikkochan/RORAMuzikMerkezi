@@ -1,24 +1,17 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Printing;
-using System.Globalization;
-using System.IO;
 using System.Linq;
 
 namespace RORAMuzikMerkezi
 {
-    // Aylık özet raporu PDF olarak üretir.
+    // Aylık özet raporunu PDF olarak üretir: her çalgı için öğrenci listesi,
+    // haftalık ders işaretleri ve ödeme durumu.
     //
-    // Dış kütüphane kullanılmaz. Windows'un yerleşik "Microsoft Print to PDF"
-    // yazıcısına System.Drawing.Printing ile çizim yapılır. Böylece proje
-    // bağımlılıksız kalır ve dağıtım tek klasör kopyalamaktan ibaret olmaya
-    // devam eder. Bunun bilinen sınırı, bu yazıcının kaldırıldığı makinelerde
-    // PDF üretilememesidir; o durumda çağıran tarafa açık bir hata bildirilir.
-    public class PdfRaporYazici
+    // Sayfa çerçevesi, logo, yazdırma kurulumu ve sayfalama PdfRapor'da;
+    // burada yalnızca bu raporun düzeni var.
+    public class PdfRaporYazici : PdfRapor
     {
-        public const string YaziciAdi = "Microsoft Print to PDF";
-
         private enum OgeTuru { CalgiBasligi, TabloBasligi, OgrenciSatiri, GrupToplami, Bosluk, GenelToplam }
 
         private class Oge
@@ -34,32 +27,11 @@ namespace RORAMuzikMerkezi
         private static readonly int[] SutunGenislikleri = { 170, 100, 45, 45, 45, 45, 60, 90, 107 };
         private static readonly string[] SutunBasliklari = { "Ad Soyad", "Telefon", "H1", "H2", "H3", "H4", "Toplam", "Ödeme", "Tutar" };
 
-        private const int SatirYuksekligi = 22;
-        private const int KenarBosluk = 60;
-
-        // Uygulamanın kendi paletiyle uyumlu: lacivert SplashForm'un zemininden,
-        // altın ise logodaki madalyon tonundan alındı.
-        private static readonly Color Lacivert = Color.FromArgb(35, 45, 100);
-        private static readonly Color Altin = Color.FromArgb(190, 152, 106);
-        private static readonly Color Metin = Color.FromArgb(30, 30, 30);
-        private static readonly Color SolukMetin = Color.FromArgb(110, 110, 110);
-        private static readonly Color ZebraZemin = Color.FromArgb(245, 247, 252);
-        private static readonly Color BolumZemin = Color.FromArgb(232, 236, 247);
-        private static readonly Color CizgiRengi = Color.FromArgb(205, 212, 230);
-        private static readonly Color OdendiRengi = Color.FromArgb(30, 130, 75);
-        private static readonly Color OdenmediRengi = Color.FromArgb(180, 60, 60);
-
-        private static int ToplamGenislik { get { return SutunGenislikleri.Sum(); } }
-
         private readonly int yil;
         private readonly int ay;
         private readonly string ayAdi;
         private readonly List<Oge> ogeler = new List<Oge>();
         private int siradaki;
-        private int sayfaNo;
-        private Image logo;   // kırpılmış, yuvarlatılmış, basıma hazır hâli
-
-        private static CultureInfo TrKultur { get { return new CultureInfo("tr-TR"); } }
 
         public PdfRaporYazici(int yil, int ay)
         {
@@ -69,14 +41,14 @@ namespace RORAMuzikMerkezi
             OgeleriHazirla();
         }
 
-        public static bool YaziciKullanilabilirMi()
-        {
-            foreach (string ad in PrinterSettings.InstalledPrinters)
-            {
-                if (string.Equals(ad, YaziciAdi, StringComparison.OrdinalIgnoreCase)) return true;
-            }
-            return false;
-        }
+        protected override string BelgeAdi { get { return $"RORA Özet Rapor {ayAdi}"; } }
+        protected override string BaslikAltSatiri { get { return $"{ayAdi.ToUpper(TrKultur)} AYI ÖZET RAPORU"; } }
+        protected override string DevamMetni { get { return $"{ayAdi} özet raporu (devam)"; } }
+        protected override int ToplamGenislik { get { return SutunGenislikleri.Sum(); } }
+
+        protected override void BasaSar() { siradaki = 0; }
+        protected override bool KalanOgeVar { get { return siradaki < ogeler.Count; } }
+        protected override int SiradakiGerekenYer { get { return GerekenYer(ogeler[siradaki].Tur); } }
 
         // Raporun tüm satırlarını önceden düzleştirir. Sayfalama, çizim
         // sırasında bu listeden sığdığı kadarını almakla yapılır.
@@ -146,265 +118,57 @@ namespace RORAMuzikMerkezi
             });
         }
 
-        // Hata durumunda istisna yukarı taşınır; çağıran taraf kullanıcıyı bilgilendirir.
-        public void Yazdir(string hedefYol)
+        protected override int SiradakiOgeyiCiz(Graphics g, Kaynaklar k, int sol, int y)
         {
-            if (!YaziciKullanilabilirMi())
-                throw new InvalidOperationException($"\"{YaziciAdi}\" yazıcısı bu bilgisayarda bulunamadı. PDF üretimi bu yazıcıya bağlıdır.");
+            var oge = ogeler[siradaki];
 
-            if (File.Exists(hedefYol)) File.Delete(hedefYol);
-
-            siradaki = 0;
-            sayfaNo = 0;
-
-            LogoyuHazirla();
-
-            try
+            switch (oge.Tur)
             {
-                using (var belge = new PrintDocument())
-                {
-                    belge.DocumentName = $"RORA Özet Rapor {ayAdi}";
-                    belge.PrinterSettings.PrinterName = YaziciAdi;
-                    belge.PrinterSettings.PrintToFile = true;
-                    belge.PrinterSettings.PrintFileName = hedefYol;
-                    belge.DefaultPageSettings.Margins = new Margins(KenarBosluk, KenarBosluk, KenarBosluk, KenarBosluk);
+                case OgeTuru.CalgiBasligi:
+                    y += 6;
+                    // Bölüm bandı: soluk zemin üzerinde altın bir işaret
+                    g.FillRectangle(k.Bolum, sol, y, ToplamGenislik, 24);
+                    g.FillRectangle(k.Altin, sol, y, 5, 24);
+                    g.DrawString(oge.Metin, k.BolumBasligi, k.Lacivert, sol + 13, y + 3);
+                    y += 28;
+                    break;
 
-                    // Sütun genişlikleri A4'e göre hesaplandı. Yazıcının varsayılanı
-                    // Letter ise son sütun taşacağı için kağıdı açıkça seçiyoruz.
-                    foreach (PaperSize boyut in belge.PrinterSettings.PaperSizes)
-                    {
-                        if (boyut.Kind == PaperKind.A4) { belge.DefaultPageSettings.PaperSize = boyut; break; }
-                    }
+                case OgeTuru.TabloBasligi:
+                    g.FillRectangle(k.Lacivert, sol, y, ToplamGenislik, SatirYuksekligi);
+                    CizSatir(g, SutunBasliklari, k.TabloBasligi, k.Beyaz, null, sol, y, k.Cizgi, true);
+                    y += SatirYuksekligi;
+                    break;
 
-                    belge.PrintPage += SayfaCiz;
-                    belge.Print();
-                }
-            }
-            finally
-            {
-                if (logo != null) { logo.Dispose(); logo = null; }
-            }
+                case OgeTuru.OgrenciSatiri:
+                    if (oge.Zebra) g.FillRectangle(k.Zebra, sol, y, ToplamGenislik, SatirYuksekligi);
+                    CizSatir(g, oge.Hucreler, k.Satir, k.Siyah,
+                             oge.Odendi ? k.Odendi : k.Odenmedi, sol, y, k.Cizgi, false);
+                    y += SatirYuksekligi;
+                    break;
 
-            if (!TamamlanmayiBekle(hedefYol, TimeSpan.FromSeconds(60)))
-                throw new IOException("PDF dosyası oluşturulamadı. Yazıcı çıktıyı yazamamış olabilir.");
-        }
+                case OgeTuru.GrupToplami:
+                    y += 3;
+                    g.DrawString(oge.Metin, k.Ozet, k.Gri, sol + 6, y);
+                    y += 20;
+                    break;
 
-        // Logo sayfaya çizilmeden önce bellekte hazırlanır: boş çerçevesi
-        // kırpılır, madalyonun dışı beyaza boyanır. Sayfaya çizilen şey böylece
-        // sıradan bir dörtgen resim olur.
-        //
-        // Bu dolambaç şundan: kırpma bölgesi (SetClip) ve kaynak dörtgen alan
-        // isteyen DrawImage, yazdırma sürücüsünde bitmap üzerindekinden farklı
-        // davranıyor. Aynı kod bitmap ve metafile üzerinde doğru çizerken PDF
-        // çıktısında logoyu büyütülmüş ve kaydırılmış basıyordu. Sayfaya sade
-        // bir resim göndermek bu farkı tümüyle ortadan kaldırıyor.
-        //
-        // Madalyonun dışı saydam değil beyaz bırakılıyor; sayfa zemini zaten
-        // beyaz ve yazdırma sürücülerinin saydamlığı güvenilir biçimde
-        // basmadığı biliniyor.
-        private void LogoyuHazirla()
-        {
-            // Rapor rora.jpeg kullanır, splash ekranındaki rora1.png'yi değil:
-            // o dosyada madalyon dört yanından hafifçe kırpılmış, büyük
-            // basıldığında kenarları düz görünüyor. rora.jpeg'de madalyon tam
-            // ve çözünürlüğü iki katı. İkisi de yoksa rapor logosuz üretilir.
-            using (var kaynak = Varliklar.Resim("rora.jpeg") ?? Varliklar.Resim("rora1.png"))
-            {
-                if (kaynak == null) return;
+                case OgeTuru.Bosluk:
+                    y += 14;
+                    break;
 
-                Rectangle icerik = DoluAlan(kaynak);
-                var hazir = new Bitmap(icerik.Width, icerik.Height);
-
-                using (var gl = Graphics.FromImage(hazir))
-                {
-                    gl.Clear(Color.White);
-                    gl.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-                    gl.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-
-                    using (var yol = new System.Drawing.Drawing2D.GraphicsPath())
-                    {
-                        // Madalyon tam daire değil; çevresindeki koyu gölge ince
-                        // bir halka olarak kalmasın diye biraz içeri çekiliyor.
-                        var daire = new RectangleF(0, 0, icerik.Width, icerik.Height);
-                        daire.Inflate(-icerik.Width * 0.015f, -icerik.Height * 0.015f);
-                        yol.AddEllipse(daire);
-                        gl.SetClip(yol);
-
-                        gl.DrawImage(kaynak, new Rectangle(0, 0, icerik.Width, icerik.Height),
-                                     icerik.X, icerik.Y, icerik.Width, icerik.Height,
-                                     GraphicsUnit.Pixel);
-                    }
-                }
-
-                logo = hazir;
-            }
-        }
-
-        // Logo dosyasının çevresindeki boş çerçeveyi bulur. rora1.png geniş bir
-        // beyaz zemin üzerine oturtulmuş; olduğu gibi çizilirse madalyon küçük
-        // kalıp başlıkta boşluk oluşturuyor. Köşe pikseli zemin kabul edilip
-        // ondan belirgin şekilde ayrılan ilk/son satır ve sütun aranır. Tarama
-        // ikişer piksel adımlıdır: kenar payı zaten sonradan bir miktar
-        // genişletildiği için tam hassasiyet gerekmiyor.
-        private static Rectangle DoluAlan(Image resim)
-        {
-            var bmp = resim as Bitmap;
-            if (bmp == null) return new Rectangle(0, 0, resim.Width, resim.Height);
-
-            try
-            {
-                Color zemin = bmp.GetPixel(0, 0);
-                int solX = bmp.Width, sagX = -1, ustY = bmp.Height, altY = -1;
-
-                for (int py = 0; py < bmp.Height; py += 2)
-                {
-                    for (int px = 0; px < bmp.Width; px += 2)
-                    {
-                        if (ZeminMi(bmp.GetPixel(px, py), zemin)) continue;
-                        if (px < solX) solX = px;
-                        if (px > sagX) sagX = px;
-                        if (py < ustY) ustY = py;
-                        if (py > altY) altY = py;
-                    }
-                }
-
-                if (sagX < 0 || altY < 0) return new Rectangle(0, 0, bmp.Width, bmp.Height);
-
-                return new Rectangle(solX, ustY, sagX - solX + 1, altY - ustY + 1);
-            }
-            catch
-            {
-                return new Rectangle(0, 0, resim.Width, resim.Height);
-            }
-        }
-
-        private static bool ZeminMi(Color renk, Color zemin)
-        {
-            if (renk.A < 24) return true;   // saydam alan da zemin sayılır
-            const int Tolerans = 18;
-            return Math.Abs(renk.R - zemin.R) <= Tolerans
-                && Math.Abs(renk.G - zemin.G) <= Tolerans
-                && Math.Abs(renk.B - zemin.B) <= Tolerans;
-        }
-
-        // Yazdırma kuyruğu dosyayı anında oluşturur ama içeriğini arka planda
-        // yazar. Bu yüzden yalnızca dosyanın varlığına bakmak yetmez: boyutu
-        // oluşana ve kuyruk dosyayı bırakana kadar beklenir. Aksi hâlde çağıran
-        // taraf henüz boş olan bir dosyayı açmaya çalışır.
-        private static bool TamamlanmayiBekle(string yol, TimeSpan sure)
-        {
-            DateTime bitis = DateTime.UtcNow + sure;
-            while (DateTime.UtcNow < bitis)
-            {
-                try
-                {
-                    var bilgi = new FileInfo(yol);
-                    if (bilgi.Exists && bilgi.Length > 0)
-                    {
-                        // Tek başına açabiliyorsak kuyruk işini bitirmiş demektir.
-                        using (File.Open(yol, FileMode.Open, FileAccess.Read, FileShare.None)) { }
-                        return true;
-                    }
-                }
-                catch (IOException) { }
-                System.Threading.Thread.Sleep(150);
-            }
-            return false;
-        }
-
-        private void SayfaCiz(object gonderen, PrintPageEventArgs e)
-        {
-            sayfaNo++;
-            var g = e.Graphics;
-            int sol = e.MarginBounds.Left;
-            int y = e.MarginBounds.Top;
-            int altSinir = e.MarginBounds.Bottom - 40;
-
-            g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-
-            using (var fBaslik = new Font("Segoe UI", 16, FontStyle.Bold))
-            using (var fAltBaslik = new Font("Segoe UI", 10))
-            using (var fUstBilgi = new Font("Segoe UI", 8.5f))
-            using (var fCalgi = new Font("Segoe UI", 11, FontStyle.Bold))
-            using (var fTabloBaslik = new Font("Segoe UI", 8.5f, FontStyle.Bold))
-            using (var fSatir = new Font("Segoe UI", 9))
-            using (var fOzet = new Font("Segoe UI", 9, FontStyle.Italic))
-            using (var fGenel = new Font("Segoe UI", 10, FontStyle.Bold))
-            using (var fDipnot = new Font("Segoe UI", 8))
-            using (var lacivert = new SolidBrush(Lacivert))
-            using (var altin = new SolidBrush(Altin))
-            using (var siyah = new SolidBrush(Metin))
-            using (var gri = new SolidBrush(SolukMetin))
-            using (var beyaz = new SolidBrush(Color.White))
-            using (var odendiFirca = new SolidBrush(OdendiRengi))
-            using (var odenmediFirca = new SolidBrush(OdenmediRengi))
-            using (var zebraFirca = new SolidBrush(ZebraZemin))
-            using (var bolumFirca = new SolidBrush(BolumZemin))
-            using (var cizgi = new Pen(CizgiRengi))
-            {
-                y = sayfaNo == 1
-                    ? IlkSayfaBasligiCiz(g, sol, y, fBaslik, fAltBaslik, lacivert, gri, altin)
-                    : DevamBasligiCiz(g, sol, y, fUstBilgi, gri, cizgi);
-
-                while (siradaki < ogeler.Count)
-                {
-                    var oge = ogeler[siradaki];
-                    if (y + GerekenYer(oge.Tur) > altSinir) break;
-
-                    switch (oge.Tur)
-                    {
-                        case OgeTuru.CalgiBasligi:
-                            y += 6;
-                            // Bölüm bandı: soluk zemin üzerinde altın bir işaret
-                            g.FillRectangle(bolumFirca, sol, y, ToplamGenislik, 24);
-                            g.FillRectangle(altin, sol, y, 5, 24);
-                            g.DrawString(oge.Metin, fCalgi, lacivert, sol + 13, y + 3);
-                            y += 28;
-                            break;
-
-                        case OgeTuru.TabloBasligi:
-                            g.FillRectangle(lacivert, sol, y, ToplamGenislik, SatirYuksekligi);
-                            CizSatir(g, SutunBasliklari, fTabloBaslik, beyaz, null, sol, y, cizgi, true);
-                            y += SatirYuksekligi;
-                            break;
-
-                        case OgeTuru.OgrenciSatiri:
-                            if (oge.Zebra) g.FillRectangle(zebraFirca, sol, y, ToplamGenislik, SatirYuksekligi);
-                            CizSatir(g, oge.Hucreler, fSatir, siyah,
-                                     oge.Odendi ? odendiFirca : odenmediFirca, sol, y, cizgi, false);
-                            y += SatirYuksekligi;
-                            break;
-
-                        case OgeTuru.GrupToplami:
-                            y += 3;
-                            g.DrawString(oge.Metin, fOzet, gri, sol + 6, y);
-                            y += 20;
-                            break;
-
-                        case OgeTuru.Bosluk:
-                            y += 14;
-                            break;
-
-                        case OgeTuru.GenelToplam:
-                            y += 10;
-                            var kutu = new Rectangle(sol, y, ToplamGenislik - 1, 36);
-                            g.FillRectangle(bolumFirca, kutu);
-                            g.FillRectangle(altin, sol, y, ToplamGenislik, 3);
-                            using (var kutuKalem = new Pen(Lacivert))
-                                g.DrawRectangle(kutuKalem, kutu);
-                            g.DrawString(oge.Metin, fGenel, lacivert, sol + 10, y + 11);
-                            y += 42;
-                            break;
-                    }
-
-                    siradaki++;
-                }
-
-                DipnotCiz(g, e, sol, fDipnot, gri, cizgi);
+                case OgeTuru.GenelToplam:
+                    y += 10;
+                    var kutu = new Rectangle(sol, y, ToplamGenislik - 1, 36);
+                    g.FillRectangle(k.Bolum, kutu);
+                    g.FillRectangle(k.Altin, sol, y, ToplamGenislik, 3);
+                    g.DrawRectangle(k.LacivertKalem, kutu);
+                    g.DrawString(oge.Metin, k.Genel, k.Lacivert, sol + 10, y + 11);
+                    y += 42;
+                    break;
             }
 
-            e.HasMorePages = siradaki < ogeler.Count;
+            siradaki++;
+            return y;
         }
 
         // Bir öğenin sayfada kaplayacağı en az yer. Çalgı başlığı için tablo
@@ -420,72 +184,6 @@ namespace RORAMuzikMerkezi
             }
         }
 
-        private int IlkSayfaBasligiCiz(Graphics g, int sol, int y, Font fBaslik, Font fAltBaslik,
-                                       Brush lacivert, Brush gri, Brush altin)
-        {
-            const int LogoYuksekligi = 78;
-            int metinSol = sol;
-
-            if (logo != null)
-            {
-                int logoGenislik = LogoGenisligi(LogoYuksekligi);
-                LogoCiz(g, sol, y, logoGenislik, LogoYuksekligi);
-                metinSol = sol + logoGenislik + 22;
-            }
-
-            g.DrawString("RORA SANAT MERKEZİ", fBaslik, lacivert, metinSol, y + 4);
-            g.DrawString($"{ayAdi.ToUpper(TrKultur)} AYI ÖZET RAPORU", fAltBaslik, lacivert, metinSol, y + 34);
-            g.DrawString($"Rapor tarihi: {DateTime.Now.ToString("dd.MM.yyyy HH:mm", TrKultur)}",
-                         fAltBaslik, gri, metinSol, y + 52);
-
-            y += LogoYuksekligi + 12;
-            g.FillRectangle(altin, sol, y, ToplamGenislik, 3);
-            g.FillRectangle(lacivert, sol, y + 5, ToplamGenislik, 1);
-            return y + 20;
-        }
-
-        private int LogoGenisligi(int yukseklik)
-        {
-            return (int)Math.Round(yukseklik * ((double)logo.Width / logo.Height));
-        }
-
-        // Logo LogoyuHazirla'da kırpılıp yuvarlatılmış hâlde bekliyor; sayfaya
-        // yalnızca ölçeklenerek çiziliyor.
-        private void LogoCiz(Graphics g, int x, int y, int genislik, int yukseklik)
-        {
-            g.DrawImage(logo, new Rectangle(x, y, genislik, yukseklik));
-        }
-
-        private int DevamBasligiCiz(Graphics g, int sol, int y, Font fUstBilgi, Brush gri, Pen cizgi)
-        {
-            const int LogoYuksekligi = 26;
-            int metinSol = sol;
-
-            if (logo != null)
-            {
-                int logoGenislik = LogoGenisligi(LogoYuksekligi);
-                LogoCiz(g, sol, y - 4, logoGenislik, LogoYuksekligi);
-                metinSol = sol + logoGenislik + 10;
-            }
-
-            g.DrawString($"RORA SANAT MERKEZİ — {ayAdi} özet raporu (devam)", fUstBilgi, gri, metinSol, y + 3);
-            y += LogoYuksekligi + 2;
-            g.DrawLine(cizgi, sol, y, sol + ToplamGenislik, y);
-            return y + 12;
-        }
-
-        private void DipnotCiz(Graphics g, PrintPageEventArgs e, int sol, Font fDipnot, Brush gri, Pen cizgi)
-        {
-            int dipY = e.MarginBounds.Bottom + 6;
-            g.DrawLine(cizgi, sol, dipY, sol + ToplamGenislik, dipY);
-
-            g.DrawString("RORA Sanat Merkezi", fDipnot, gri, sol, dipY + 6);
-
-            string dipnot = $"Sayfa {sayfaNo}";
-            var olcu = g.MeasureString(dipnot, fDipnot);
-            g.DrawString(dipnot, fDipnot, gri, sol + (ToplamGenislik - olcu.Width) / 2, dipY + 6);
-        }
-
         // odemeFirca verilirse 7. sütun (Ödeme) o renkle yazılır; ödeme durumu
         // rapora bakan kişinin ilk aradığı bilgi olduğu için diğerlerinden ayrışır.
         private static void CizSatir(Graphics g, string[] hucreler, Font yazi, Brush firca,
@@ -496,7 +194,7 @@ namespace RORAMuzikMerkezi
             for (int i = 0; i < SutunGenislikleri.Length && i < hucreler.Length; i++)
             {
                 var alan = new RectangleF(x + 3, y + 4, SutunGenislikleri[i] - 6, SatirYuksekligi - 6);
-                var bicim = new StringFormat { Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap };
+                var bicim = new System.Drawing.StringFormat { Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap };
 
                 // Ad ve telefon sola, sayısal alanlar ortaya, tutar sağa
                 if (i == 0 || i == 1) bicim.Alignment = StringAlignment.Near;

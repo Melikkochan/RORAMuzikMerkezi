@@ -100,7 +100,13 @@
     <Compile Include="Metin.cs" />
     <Compile Include="Olcek.cs" />
     <Compile Include="Renkler.cs" />
+    <Compile Include="Donem.cs" />
+    <Compile Include="PdfRapor.cs" />
     <Compile Include="PdfRaporYazici.cs" />
+    <Compile Include="DonemPdfRaporu.cs" />
+    <Compile Include="RaporDonemSecimFormu.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="UcretTanimFormu.cs">
       <SubType>Form</SubType>
     </Compile>

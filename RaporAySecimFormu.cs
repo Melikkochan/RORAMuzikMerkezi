@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Drawing;
 using System.Globalization;
-using System.Linq;
 using System.Windows.Forms;
 
 namespace RORAMuzikMerkezi
@@ -77,7 +76,7 @@ namespace RORAMuzikMerkezi
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 Font = new Font("Segoe UI", 10)
             };
-            foreach (int y in YilAraligi())
+            foreach (int y in Donem.SecilebilirYillar())
                 cmbYil.Items.Add(y);
             cmbYil.SelectedItem = DateTime.Now.Year;
 
@@ -135,26 +134,6 @@ namespace RORAMuzikMerkezi
 
             this.AcceptButton = btnMetin;
             this.CancelButton = btnIptal;
-        }
-
-        // Listelenecek yıllar, kayıtlardaki en eski yıldan gelecek yıla kadar.
-        // Sabit bir aralık yerine veriye bakılıyor: eski kayıtları olan bir
-        // merkezde o yıllar da seçilebilmeli, yeni kurulan bir merkezde ise
-        // liste gereksiz yere uzamamalı.
-        private static int[] YilAraligi()
-        {
-            int buYil = DateTime.Now.Year;
-            int enEski = buYil;
-
-            foreach (var ogrenci in VeriYoneticisi.Veriler.Ogrenciler)
-            {
-                foreach (var ders in ogrenci.DersKayitlari)
-                    if (ders.Yil < enEski) enEski = ders.Yil;
-                foreach (var odeme in ogrenci.OdemeKayitlari)
-                    if (odeme.Yil < enEski) enEski = odeme.Yil;
-            }
-
-            return Enumerable.Range(enEski, (buYil + 1) - enEski + 1).ToArray();
         }
 
         private void Bitir(bool pdf)
