@@ -1,12 +1,10 @@
 # Sprint Plan
 
-Work is tracked as issues in GitLab. This file summarises what has shipped and what is open.
-
-> **Note on milestones.** The `Sprint 1` and `Sprint 2` milestones were created while the project was being set up and contain only throwaway test issues (#4–#9). The feature work listed below under Sprint 1 and Sprint 2 was delivered as issues #15–#29, which carry no milestone. Milestone bookkeeping therefore does not match the sprint boundaries described here; the issue numbers are the reliable record.
+Work is tracked as issues in GitLab, grouped into milestones. This file mirrors their scope and status.
 
 ## Sprint 1 — 3–4 August 2026
 
-Core application.
+Core application. This work predates issue tracking, so the milestone carries no issues.
 
 - Student registration and the tabbed interface by instrument
 - Weekly lesson tracking
@@ -17,7 +15,7 @@ Core application.
 
 ---
 
-## Sprint 2 — 5 August 2026
+## Sprint 2 — 5–6 August 2026
 
 Feature depth and data safety. All issues below closed on 5 August 2026.
 
@@ -65,6 +63,7 @@ Documentation, repository hygiene, CI, and interface work.
 ### In progress
 
 - Documentation brought back in line with the code after 29 commits (#35)
+- Milestone records reconciled with the work actually delivered (#37)
 
 ### Open
 
