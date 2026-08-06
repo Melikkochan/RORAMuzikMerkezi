@@ -317,6 +317,7 @@ namespace RORAMuzikMerkezi
                 ("📚", "Bu Hafta Ders Alan", $"{buHaftaDers}/{toplamOgrenci}", Renkler.Altin, false),
             };
 
+            var kutuListesi = new List<Panel>();
             int xPos = 20;
             foreach (var (ikon, baslik, deger, renk, dolu) in kutular)
             {
@@ -375,8 +376,44 @@ namespace RORAMuzikMerkezi
                 });
 
                 panel.Controls.Add(kutu);
+                kutuListesi.Add(kutu);
                 xPos += 210;
             }
+
+            // Kutular panele göre yatayda ortalanıyor. Konumlar sabit
+            // verilmiyor çünkü pencere genişliği değişken; ayrıca ölçekli
+            // ekranda kutuların gerçek genişliği tasarım pikselinden farklı
+            // oluyor, o yüzden hesap denetimlerin kendi genişliğinden yapılıyor.
+            //
+            // Pencere kutuları sığdıramayacak kadar darsa sola yaslanıyor:
+            // ortalamaya çalışmak ilk kutuyu ekranın dışına iterdi.
+            Action<Control[]> ortalayiciyiBagla = digerleri =>
+            {
+                EventHandler ortala = (s, e) =>
+                {
+                    if (kutuListesi.Count == 0) return;
+
+                    int aralik = Olcek.Piksel(this, 20);
+                    int kenar = Olcek.Piksel(this, 20);
+                    int kutuGenisligi = kutuListesi.Sum(k => k.Width) + aralik * (kutuListesi.Count - 1);
+
+                    // İçerik sütununun genişliği en geniş öğeye göre; kutular
+                    // ile alttaki liste birbirine hizalı kalsın.
+                    int sutun = Math.Max(kutuGenisligi, digerleri.Max(c => c.Width));
+                    int bas = Math.Max(kenar, (panel.ClientSize.Width - sutun) / 2);
+
+                    int x = bas;
+                    foreach (var k in kutuListesi) { k.Left = x; x += k.Width + aralik; }
+                    foreach (var c in digerleri) c.Left = bas;
+
+                    // Liste, kutu sırasıyla aynı sağ kenarda bitsin; birkaç
+                    // piksellik fark sütunu eğri gösteriyor.
+                    var liste = digerleri.OfType<ListBox>().FirstOrDefault();
+                    if (liste != null) liste.Width = kutuGenisligi;
+                };
+                panel.SizeChanged += ortala;
+                panel.HandleCreated += ortala;
+            };
 
             // Kısa öğrenci listesi
             var lblKisaListe = new Label
@@ -409,6 +446,7 @@ namespace RORAMuzikMerkezi
                 lstOdemeyenler.Items.Add("✅ Tüm öğrenciler bu ay ödeme yapmış!");
 
             panel.Controls.AddRange(new Control[] { lblBaslik, lblTarih, lblKisaListe, lstOdemeyenler });
+            ortalayiciyiBagla(new Control[] { lblBaslik, lblTarih, lblKisaListe, lstOdemeyenler });
             tab.Controls.Add(panel);
         }
 

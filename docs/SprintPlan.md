@@ -64,6 +64,7 @@ Documentation, repository hygiene, CI, and interface work.
 - README screenshots retaken against the refreshed interface, and the missing README lines for #30 and #31 added (#36)
 - CI build pipeline running on a self-hosted Windows runner (#14)
 - Application icon replaced with the RORA medallion; it used to show "MK" (#39)
+- Summary tab content centred horizontally instead of hugging the left edge, and the screenshots refreshed with the new icon (#40)
 
 ### Open
 
