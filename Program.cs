@@ -88,6 +88,15 @@ namespace RORAMuzikMerkezi
                     splash.ShowDialog();
                 }
 
+                // Veri açılışı, ana pencere kurulmadan önce burada yapılıyor.
+                // Eskiden MainForm'un yapıcısındaydı; bir yapıcının diske
+                // yazması ve kullanıcının veri dosyasını değiştirmesi, formu
+                // yalnızca göstermek isteyen her çağıranı da bu yan etkilere
+                // ortak ediyordu. Sıra ve davranış aynı, yalnızca yeri değişti.
+                VeriYoneticisi.Yukle();
+                VeriYoneticisi.OtomatikYedekAl();
+                VeriYoneticisi.AylikOdemeKayitlariniOlustur();
+
                 Application.Run(new MainForm());
 
                 GC.KeepAlive(kilit);

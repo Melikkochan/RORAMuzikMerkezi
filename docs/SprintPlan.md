@@ -61,10 +61,11 @@ Documentation, repository hygiene, CI, and interface work.
 - Yearly and date-range reports, month by month and by instrument (#33)
 - Per-student lesson and payment history screen (#34)
 - Fixed: bottom panel buttons were sized in fixed pixels and clipped their labels; widths are now measured from the text at runtime (#38)
+- README screenshots retaken against the refreshed interface, and the missing README lines for #30 and #31 added (#36)
 
 ### Open
 
-- README screenshots to be retaken now that the interface has been refreshed, along with the README lines for #30 and #31 (#36)
+_Nothing open in this sprint._
 
 ### Deferred
 

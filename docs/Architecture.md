@@ -16,7 +16,7 @@ Single-process desktop application. No server, no database, no network calls.
 
 | File | Role |
 |---|---|
-| `Program.cs` | Entry point; enforces the single-instance rule via a named mutex |
+| `Program.cs` | Entry point; declares DPI awareness, enforces the single-instance rule via a named mutex, and loads the data before the main window is built |
 | `SplashForm.cs` | Startup screen |
 | `MainForm.cs` | Main window: menu bar, global search, summary panel, instrument tabs |
 | `CalgiSekmesi.cs` | One instrument tab: student list, weekly lesson checkboxes, payment state |
