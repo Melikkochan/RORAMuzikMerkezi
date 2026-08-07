@@ -108,7 +108,7 @@ After that, pipelines are created normally and your own runner picks them up. Le
 
 ### Registering the runner
 
-The runner for this project is already registered and lives in `C:\Users\MELİK\gitlab-runner`. These are the steps that produced it, in case it has to be redone on another machine.
+The runner for this project is already registered and lives in `C:\Users\<user>\gitlab-runner`. These are the steps that produced it, in case it has to be redone on another machine.
 
 1. Download the runner binary from GitLab's official downloads into a folder that will stay put — not a temporary directory.
 2. In GitLab, open **Settings → CI/CD → Runners** and create a project runner with the tags `windows` and `msbuild`. The job in `.gitlab-ci.yml` selects the runner by those tags, so they must match.
@@ -121,7 +121,7 @@ The runner for this project is already registered and lives in `C:\Users\MELİK\
 4. Run it:
 
    ```
-   gitlab-runner run --working-directory C:\Users\MELİK\gitlab-runner
+   gitlab-runner run --working-directory C:\Users\<user>\gitlab-runner
    ```
 
 ### Keeping the runner running
@@ -137,7 +137,7 @@ Deleting that shortcut is all it takes to stop the runner from starting. This ro
 If you would rather have it run as a proper Windows service, independent of who is logged in, do this once from an **administrator** shell instead:
 
 ```
-gitlab-runner install --working-directory C:\Users\MELİK\gitlab-runner
+gitlab-runner install --working-directory C:\Users\<user>\gitlab-runner
 gitlab-runner start
 ```
 
